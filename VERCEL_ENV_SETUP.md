@@ -4,24 +4,26 @@
 
 Go to your Vercel Dashboard → Your Project → Settings → Environment Variables
 
+> Security: Do not commit real credentials. If any of the values below were previously committed or shared, rotate them immediately in the provider dashboards before redeploying.
+
 ### 1. Housing.com API Credentials (Required)
 
 ```
-HOUSING_PROFILE_ID = 46485376
-HOUSING_ENCRYPTION_KEY = 8ec7247362901d647db2a2454c333cff
+HOUSING_PROFILE_ID = <your_housing_profile_id>
+HOUSING_ENCRYPTION_KEY = <your_housing_encryption_key>
 ```
 
 ### 2. Cron Security (Optional but Recommended)
 
 ```
-CRON_SECRET = housing-cron-secret-your-random-string-here
+CRON_SECRET = <strong_unique_cron_secret>
 ```
 
 ### 3. Existing Supabase Credentials (Already configured)
 
 ```
-NEXT_PUBLIC_SUPABASE_URL = your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY = your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL = <your_supabase_url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY = <your_supabase_anon_key>
 ```
 
 ## 📋 **Step-by-Step Vercel Setup**
@@ -37,18 +39,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = your_supabase_anon_key
 3. **Add Housing.com Variables:**
    ```
    Variable Name: HOUSING_PROFILE_ID
-   Value: 46485376
+   Value: <your_housing_profile_id>
    Environment: Production, Preview, Development (select all)
 
    Variable Name: HOUSING_ENCRYPTION_KEY
-   Value: 8ec7247362901d647db2a2454c333cff
+   Value: <your_housing_encryption_key>
    Environment: Production, Preview, Development (select all)
    ```
 
 4. **Add Cron Secret (Optional):**
    ```
    Variable Name: CRON_SECRET
-   Value: housing-cron-secret-2025
+   Value: <strong_unique_cron_secret>
    Environment: Production, Preview, Development (select all)
    ```
 
@@ -61,20 +63,20 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = your_supabase_anon_key
 
 ### 1. Test API Connection:
 ```
-https://spaceoraclecrm.vercel.app/api/housing/test
+https://<your-deployment-url>/api/housing/test
 ```
 
 ### 2. Test Manual Sync:
 ```
-curl -X POST https://spaceoraclecrm.vercel.app/api/housing/sync \
+curl -X POST https://<your-deployment-url>/api/housing/sync \
   -H "Content-Type: application/json" \
   -d '{"hoursBack": 24}'
 ```
 
 ### 3. Test Cron Endpoint:
 ```
-curl -H "Authorization: Bearer housing-cron-secret-2025" \
-  https://spaceoraclecrm.vercel.app/api/housing/cron
+curl -H "Authorization: Bearer <strong_unique_cron_secret>" \
+  https://<your-deployment-url>/api/housing/cron
 ```
 
 ## 🔍 **Verify Setup Works**
@@ -100,7 +102,7 @@ After deployment, check your Vercel Function Logs:
 - **Status**: Check Vercel Function Logs
 
 ### View New Leads:
-- **CRM Portal**: https://spaceoraclecrm.vercel.app/enquiry/list
+- **CRM Portal**: https://<your-deployment-url>/enquiry/list
 - **Filter**: Source = "Housing"
 - **Status**: Should show new leads automatically
 

@@ -7,15 +7,21 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 console.log('🏠 Housing.com Environment Setup Script\n');
 
-// Your actual credentials
 const credentials = {
-  HOUSING_PROFILE_ID: '46485376',
-  HOUSING_ENCRYPTION_KEY: '8ec7247362901d647db2a2454c333cff',
-  CRON_SECRET: 'housing-cron-secret-' + Math.random().toString(36).substring(2, 15)
+  HOUSING_PROFILE_ID: process.env.HOUSING_PROFILE_ID,
+  HOUSING_ENCRYPTION_KEY: process.env.HOUSING_ENCRYPTION_KEY,
+  CRON_SECRET:
+    process.env.CRON_SECRET || `housing-cron-${crypto.randomBytes(24).toString('hex')}`
 };
+
+if (!credentials.HOUSING_PROFILE_ID || !credentials.HOUSING_ENCRYPTION_KEY) {
+  console.error('❌ Missing credentials. Set HOUSING_PROFILE_ID and HOUSING_ENCRYPTION_KEY in your environment before running this script.');
+  process.exit(1);
+}
 
 const envLocalPath = path.join(process.cwd(), '.env.local');
 

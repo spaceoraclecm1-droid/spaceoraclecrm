@@ -9,14 +9,6 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add a test user with username 'admin' and password 'password123'
--- In a production environment, you would use proper password hashing
-INSERT INTO users (username, password)
-VALUES ('admin', 'password123')
-ON CONFLICT (username) DO NOTHING;
-
--- Instructions:
--- 1. Connect to your Supabase project
--- 2. Run this SQL script in the SQL Editor
--- 3. You can now log in with username 'admin' and password 'password123'
--- 4. For production, implement proper password hashing with bcrypt or similar 
+-- Do not insert default credentials. Create users with hashed passwords only.
+-- Example (requires pgcrypto): INSERT INTO users (username, password) VALUES ('your_admin', crypt('replace_with_strong_password', gen_salt('bf', 12)));
+-- Ensure unique, high-entropy passwords and rotate any previously exposed credentials.
