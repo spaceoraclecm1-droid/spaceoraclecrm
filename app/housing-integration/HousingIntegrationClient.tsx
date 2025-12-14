@@ -131,13 +131,13 @@ Errors: ${data.stats.errors}`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-8 text-black">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Housing.com Integration</h1>
+          <h1 className="text-3xl font-bold text-black">Housing.com Integration</h1>
           <Link
             href="/dashboard"
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
           >
             Back to Dashboard
           </Link>
@@ -148,23 +148,23 @@ Errors: ${data.stats.errors}`);
           <h2 className="text-xl font-semibold mb-4">Integration Status</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-600">Profile ID</p>
+              <p className="text-sm text-black">Profile ID</p>
               <p className="font-mono">{profileConfigured ? '✓ Configured' : '⚠️ Not configured'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">API Endpoint</p>
+              <p className="text-sm text-black">API Endpoint</p>
               <p className="text-sm">leads.housing.com/api/v0/get-builder-leads</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Auto-Sync Status</p>
-              <p className={`font-semibold ${autoSync ? 'text-green-600' : 'text-gray-500'}`}>
+              <p className="text-sm text-black">Auto-Sync Status</p>
+              <p className="font-semibold text-black">
                 {autoSync ? 'Enabled' : 'Disabled'}
               </p>
             </div>
             {nextSyncTime && (
               <div>
-                <p className="text-sm text-gray-600">Next Sync</p>
-                <p className="text-sm">{nextSyncTime.toLocaleString()}</p>
+                <p className="text-sm text-black">Next Sync</p>
+                <p className="text-sm text-black">{nextSyncTime.toLocaleString()}</p>
               </div>
             )}
           </div>
@@ -176,13 +176,13 @@ Errors: ${data.stats.errors}`);
           <button
             onClick={testConnection}
             disabled={isTesting}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:opacity-50"
           >
             {isTesting ? 'Testing...' : 'Test API Connection'}
           </button>
 
           {testResult && (
-            <div className={`mt-4 p-4 rounded ${testResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+            <div className={`mt-4 p-4 rounded ${testResult.success ? 'bg-green-50' : 'bg-red-50'} text-black`}>
               <p className="font-semibold">{testResult.message}</p>
               {testResult.data && (
                 <p className="text-sm mt-2">Found {testResult.data.length} leads in test</p>
@@ -200,14 +200,14 @@ Errors: ${data.stats.errors}`);
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded">
               <div>
                 <p className="font-semibold">Automatic Sync</p>
-                <p className="text-sm text-gray-600">Fetch new leads every 30 minutes</p>
+                <p className="text-sm text-black">Fetch new leads every 30 minutes</p>
               </div>
               <button
                 onClick={toggleAutoSync}
                 className={`px-4 py-2 rounded-lg ${
                   autoSync
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-green-600 text-white hover:bg-green-700'
+                    ? 'bg-gray-800 text-white hover:bg-gray-900'
+                    : 'bg-gray-700 text-white hover:bg-gray-800'
                 }`}
               >
                 {autoSync ? 'Disable' : 'Enable'}
@@ -218,12 +218,12 @@ Errors: ${data.stats.errors}`);
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded">
               <div>
                 <p className="font-semibold">Manual Sync</p>
-                <p className="text-sm text-gray-600">Fetch all new leads since last sync</p>
+                <p className="text-sm text-black">Fetch all new leads since last sync</p>
               </div>
               <button
                 onClick={syncNow}
                 disabled={isLoading || !profileConfigured}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:opacity-50"
               >
                 {isLoading ? 'Syncing...' : 'Sync Now'}
               </button>
@@ -241,11 +241,11 @@ Errors: ${data.stats.errors}`);
                   max="720"
                   className="px-3 py-2 border rounded"
                 />
-                <span className="text-sm text-gray-600">hours back</span>
+                <span className="text-sm text-black">hours back</span>
                 <button
                   onClick={manualFetch}
                   disabled={isLoading || !profileConfigured}
-                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                  className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:opacity-50"
                 >
                   Fetch
                 </button>
@@ -259,26 +259,26 @@ Errors: ${data.stats.errors}`);
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Last Sync Result</h2>
             <div className={`p-4 rounded ${lastSyncResult.success ? 'bg-green-50' : 'bg-red-50'}`}>
-              <p className={`font-semibold ${lastSyncResult.success ? 'text-green-800' : 'text-red-800'}`}>
+              <p className="font-semibold text-black">
                 {lastSyncResult.message}
               </p>
               {lastSyncResult.stats && (
                 <div className="grid grid-cols-4 gap-4 mt-4">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">{lastSyncResult.stats.fetched}</p>
-                    <p className="text-sm text-gray-600">Fetched</p>
+                    <p className="text-2xl font-bold text-black">{lastSyncResult.stats.fetched}</p>
+                    <p className="text-sm text-black">Fetched</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{lastSyncResult.stats.inserted}</p>
-                    <p className="text-sm text-gray-600">Inserted</p>
+                    <p className="text-2xl font-bold text-black">{lastSyncResult.stats.inserted}</p>
+                    <p className="text-sm text-black">Inserted</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-yellow-600">{lastSyncResult.stats.skipped}</p>
-                    <p className="text-sm text-gray-600">Skipped</p>
+                    <p className="text-2xl font-bold text-black">{lastSyncResult.stats.skipped}</p>
+                    <p className="text-sm text-black">Skipped</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-red-600">{lastSyncResult.stats.errors}</p>
-                    <p className="text-sm text-gray-600">Errors</p>
+                    <p className="text-2xl font-bold text-black">{lastSyncResult.stats.errors}</p>
+                    <p className="text-sm text-black">Errors</p>
                   </div>
                 </div>
               )}
@@ -296,7 +296,7 @@ Errors: ${data.stats.errors}`);
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-yellow-700">
+                <p className="text-sm text-black">
                   <strong>Housing.com credentials not configured.</strong> Please set HOUSING_PROFILE_ID and HOUSING_ENCRYPTION_KEY environment variables to enable the integration.
                 </p>
               </div>
@@ -306,8 +306,8 @@ Errors: ${data.stats.errors}`);
 
         {/* Instructions */}
         <div className="bg-blue-50 rounded-lg p-6 mt-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Setup Instructions</h3>
-          <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+          <h3 className="font-semibold text-black mb-2">Setup Instructions</h3>
+          <ol className="list-decimal list-inside space-y-2 text-sm text-black">
             <li>Configure Housing.com credentials in environment variables</li>
             <li>Test the API connection to ensure credentials are working</li>
             <li>Use manual sync to fetch initial leads</li>
