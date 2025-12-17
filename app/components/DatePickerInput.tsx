@@ -329,7 +329,7 @@ export default function DatePickerInput({
           onClick={(e) => {
             e.stopPropagation(); // Prevent event from propagating
           }}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base py-2 pl-3 pr-10 ${inputError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base py-2 pl-3 pr-10 text-black ${inputError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
           placeholder={placeholder}
           required={required}
           aria-label={`Date picker - ${placeholder}. You can type a date or use the calendar button.`}
@@ -359,7 +359,7 @@ export default function DatePickerInput({
       )}
       
       {/* Small help text */}
-      <div className="text-gray-500 text-xs mt-1">
+      <div className="text-black text-xs mt-1">
         Use calendar icon or type in DD/MM/YYYY format
       </div>
       

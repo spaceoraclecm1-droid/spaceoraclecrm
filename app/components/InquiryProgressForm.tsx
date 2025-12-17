@@ -37,15 +37,21 @@ export default function InquiryProgressForm({ inquiryId, onClose, onSuccess }: I
     try {
       setIsSaving(true);
 
+      // Validate that inquiryId is a valid number
+      const numericId = parseInt(inquiryId, 10);
+      if (isNaN(numericId)) {
+        throw new Error('Invalid inquiry ID');
+      }
+
       // Create a data object for the Inquiry_Progress table
       const progressData: {
-        eid: string;
+        eid: number;
         progress_type: string;
         remark: string;
         date?: string;
         created_at: string;
       } = {
-        eid: inquiryId,
+        eid: numericId,
         progress_type: formData.progressType,
         remark: formData.remarks,
         created_at: new Date().toISOString()
@@ -128,7 +134,7 @@ export default function InquiryProgressForm({ inquiryId, onClose, onSuccess }: I
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full p-4 sm:p-6">
         <div className="flex justify-between items-center mb-3 sm:mb-4">
-          <h2 className="text-lg sm:text-xl font-bold">Add New Progress</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-black">Add New Progress</h2>
           <button
             onClick={handleBack}
             className="text-gray-500 hover:text-gray-700"
@@ -140,12 +146,12 @@ export default function InquiryProgressForm({ inquiryId, onClose, onSuccess }: I
         </div>
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Progress Type</label>
+            <label className="block text-sm font-medium text-black mb-1">Progress Type</label>
             <select
               name="progressType"
               value={formData.progressType}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base py-2"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base py-2 text-black"
               required
             >
               <option value="phone_call">Phone Call</option>
@@ -161,12 +167,12 @@ export default function InquiryProgressForm({ inquiryId, onClose, onSuccess }: I
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+            <label className="block text-sm font-medium text-black mb-1">Remarks</label>
             <textarea 
               name="remarks"
               value={formData.remarks}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base text-black"
               rows={3}
               placeholder="Enter remarks..."
               required
@@ -174,7 +180,7 @@ export default function InquiryProgressForm({ inquiryId, onClose, onSuccess }: I
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date (DD/MM/YYYY)</label>
+            <label className="block text-sm font-medium text-black mb-1">Date (DD/MM/YYYY)</label>
             <DatePickerInput
               name="date"
               value={formData.date}
