@@ -30,44 +30,72 @@ export default function TodaysSiteVisitsPage() {
     try {
       setIsLoading(true);
       const todayDate = getTodayDate();
-      
+
       // Query Inquiry_Progress table for site visits scheduled today
-      const { data, error } = await supabase
+      const { data: progressData, error: progressError } = await supabase
         .from('Inquiry_Progress')
-        .select('*, enquiries:eid("Client Name", "Mobile")') // Join with enquiries table to get client name and mobile
+        .select('*')
         .eq('progress_type', 'site_visit_schedule')
         .eq('date', todayDate)
         .order('created_at', { ascending: false }); // Get newest entries first
 
-      if (error) throw error;
+      if (progressError) throw progressError;
+
+      if (!progressData || progressData.length === 0) {
+        setSiteVisits([]);
+        return;
+      }
 
       // Create a Map to store the latest entry for each unique eid
       const latestVisitMap = new Map<string, any>();
-      
+
       // Loop through all entries and keep only the latest one for each eid
-      (data || []).forEach(item => {
+      progressData.forEach(item => {
         if (!latestVisitMap.has(item.eid)) {
           latestVisitMap.set(item.eid, item);
         }
       });
-      
-      console.log(`Found ${data?.length || 0} total site visits, filtered to ${latestVisitMap.size} unique inquiries`);
-      
+
+      // Get unique eids to fetch client details
+      const uniqueEids = Array.from(latestVisitMap.keys());
+
+      // Fetch client details for all unique eids
+      const { data: enquiriesData, error: enquiriesError } = await supabase
+        .from('enquiries')
+        .select('id, "Client Name", Mobile')
+        .in('id', uniqueEids);
+
+      if (enquiriesError) throw enquiriesError;
+
+      // Create a map of enquiries by id for quick lookup
+      const enquiriesMap = new Map(
+        (enquiriesData || []).map(enq => [enq.id, enq])
+      );
+
+      console.log(`Found ${progressData.length} total site visits, filtered to ${latestVisitMap.size} unique inquiries`);
+
       // Transform the data into SiteVisit format, using only the latest entries
-      const visits: SiteVisit[] = Array.from(latestVisitMap.values()).map(item => ({
-        id: item.id || '',
-        eid: item.eid || '',
-        progress_type: item.progress_type || '',
-        remark: item.remark || '',
-        date: item.date || '',
-        clientName: item.enquiries?.["Client Name"] || 'Unknown Client',
-        mobile: item.enquiries?.["Mobile"] || 'N/A',
-        created_at: item.created_at || new Date().toISOString()
-      }));
+      const visits: SiteVisit[] = Array.from(latestVisitMap.values()).map(item => {
+        const enquiry = enquiriesMap.get(item.eid);
+        return {
+          id: item.id || '',
+          eid: item.eid || '',
+          progress_type: item.progress_type || '',
+          remark: item.remark || '',
+          date: item.date || '',
+          clientName: enquiry?.["Client Name"] || 'Unknown Client',
+          mobile: enquiry?.Mobile || 'N/A',
+          created_at: item.created_at || new Date().toISOString()
+        };
+      });
 
       setSiteVisits(visits);
     } catch (error) {
       console.error('Error fetching today\'s site visits:', error);
+      // Log more detailed error information
+      if (error && typeof error === 'object') {
+        console.error('Error details:', JSON.stringify(error, null, 2));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -97,9 +125,9 @@ export default function TodaysSiteVisitsPage() {
 
       <div className="container mx-auto px-4">
         <div className="premium-card overflow-hidden">
-          <div className="p-6 border-b">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold flex items-center">
+              <h2 className="text-lg font-semibold flex items-center text-gray-900 dark:text-gray-100">
                 <span className="inline-block w-1.5 h-5 bg-[#c69c6d] rounded-full mr-2"></span>
                 Today&apos;s Site Visit Details
               </h2>
@@ -132,20 +160,20 @@ export default function TodaysSiteVisitsPage() {
                   </thead>
                   <tbody>
                     {siteVisits.map((visit) => (
-                      <tr key={visit.id} className="hover:bg-gray-50">
+                      <tr key={visit.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td>
                           <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0 h-10 w-10 bg-[#1a2e29]/10 rounded-full flex items-center justify-center text-[#1a2e29]">
+                            <div className="flex-shrink-0 h-10 w-10 bg-[#1a2e29]/10 dark:bg-[#c69c6d]/20 rounded-full flex items-center justify-center text-[#1a2e29] dark:text-[#c69c6d]">
                               {visit.clientName.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div className="font-medium text-gray-900">{visit.clientName}</div>
-                              <div className="text-xs text-gray-500">{visit.mobile}</div>
+                              <div className="font-medium text-gray-900 dark:text-gray-100">{visit.clientName}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{visit.mobile}</div>
                             </div>
                           </div>
                         </td>
                         <td>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             {visit.date}
                           </div>
                         </td>
@@ -206,11 +234,11 @@ export default function TodaysSiteVisitsPage() {
                   </tbody>
                 </table>
               ) : (
-                <div className="text-center py-16 text-gray-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <div className="text-lg font-medium">No site visits scheduled for today</div>
+                  <div className="text-lg font-medium text-gray-700 dark:text-gray-300">No site visits scheduled for today</div>
                   <p className="mt-2">There are no site visits scheduled for {getTodayDate()}</p>
                 </div>
               )}
