@@ -65,20 +65,20 @@ const getPhoneCallUrl = (mobile: string): string => {
   return `tel:${numberWithCountryCode}`;
 };
 
-// Fetch unique inquiry IDs that have a 'deal_done' progress entry
-const fetchDealDoneInquiryIds = async (): Promise<(string | number)[]> => {
+// Fetch unique inquiry IDs that have a 'deal_done' or 'deal_lost' progress entry
+const fetchCompletedInquiryIds = async (): Promise<(string | number)[]> => {
   try {
     const { data, error } = await supabase
       .from('Inquiry_Progress')
       .select('eid')
-      .eq('progress_type', 'deal_done');
+      .in('progress_type', ['deal_done', 'deal_lost']);
 
     if (error) throw error;
 
     const ids = (data || []).map((row: any) => row.eid);
     return Array.from(new Set(ids));
   } catch (err) {
-    console.error("Error fetching deal_done inquiry IDs:", err);
+    console.error("Error fetching completed inquiry IDs:", err);
     return [];
   }
 };
@@ -92,12 +92,12 @@ export default function TodayInquiries() {
   const [assignedToFilter, setAssignedToFilter] = useState<string>('');
 
   useEffect(() => {
-    // If we have inquiries from the dashboard, use those but exclude any with deal_done progress
+    // If we have inquiries from the dashboard, use those but exclude any with deal_done or deal_lost progress
     const loadFromStore = async () => {
       if (todayInquiries.length > 0) {
         setIsLoading(true);
-        const dealDoneIds = await fetchDealDoneInquiryIds();
-        const dealDoneIdSet = new Set(dealDoneIds.map(String));
+        const completedIds = await fetchCompletedInquiryIds();
+        const completedIdSet = new Set(completedIds.map(String));
 
         // Convert dashboard Enquiry type to our local Inquiry type
         const convertedInquiries: Inquiry[] = todayInquiries.map((enquiry: DashboardEnquiry) => ({
@@ -111,12 +111,12 @@ export default function TodayInquiries() {
           assignedEmployee: enquiry.assignedEmployee,
           dateCreated: enquiry.dateCreated,
           sourceType: 'nfd'
-        })).filter((inq) => !dealDoneIdSet.has(String(inq.id)));
+        })).filter((inq) => !completedIdSet.has(String(inq.id)));
 
         setInquiries(convertedInquiries);
         setFilteredInquiries(convertedInquiries);
         setIsLoading(false);
-        console.log('Using inquiries from dashboard (after excluding deal_done):', convertedInquiries.length);
+        console.log('Using inquiries from dashboard (after excluding completed deals):', convertedInquiries.length);
       } else {
         // If no inquiries from dashboard, fetch them
         fetchTodaysInquiries();
@@ -168,8 +168,8 @@ export default function TodayInquiries() {
 
       console.log('Fetching today\'s data with date:', formattedDate);
 
-      // Fetch all 'deal_done' inquiry IDs to exclude
-      const dealDoneIds = await fetchDealDoneInquiryIds();
+      // Fetch all 'deal_done' and 'deal_lost' inquiry IDs to exclude
+      const completedIds = await fetchCompletedInquiryIds();
 
       // Fetch from enquiries table where NFD = today (same as dashboard)
       let query = supabase
@@ -177,9 +177,9 @@ export default function TodayInquiries() {
         .select('*')
         .eq('NFD', formattedDate);
 
-      // Exclude inquiries that are marked as deal_done via progress
-      if (dealDoneIds.length > 0) {
-        query = query.not('id', 'in', `(${dealDoneIds.join(',')})`);
+      // Exclude inquiries that are marked as deal_done or deal_lost via progress
+      if (completedIds.length > 0) {
+        query = query.not('id', 'in', `(${completedIds.join(',')})`);
       }
 
       const { data: nfdData, error: nfdError } = await query;
@@ -213,7 +213,7 @@ export default function TodayInquiries() {
         sourceType: 'nfd'
       }));
 
-      console.log('Total today\'s inquiries (after excluding deal_done):', transformedData.length);
+      console.log('Total today\'s inquiries (after excluding completed deals):', transformedData.length);
       setInquiries(transformedData);
       setFilteredInquiries(transformedData);
     } catch (error) {
