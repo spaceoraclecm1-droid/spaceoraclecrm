@@ -229,15 +229,36 @@ export default function Home() {
 
       console.log('Fetching today\'s data with date:', formattedDate);
 
-      // PART 1: Fetch from enquiries table where NFD = today
-      const { data: nfdData, error: nfdError } = await supabase
+      // Fetch all 'deal_done' and 'deal_lost' inquiry IDs to exclude
+      const { data: completedData, error: completedError } = await supabase
+        .from('Inquiry_Progress')
+        .select('eid')
+        .in('progress_type', ['deal_done', 'deal_lost']);
+
+      if (completedError) {
+        console.error('Error fetching completed inquiry IDs:', completedError);
+        throw completedError;
+      }
+
+      const completedIds = completedData.map(item => item.eid);
+      console.log('Completed inquiries to exclude from today:', completedIds.length);
+
+      // Fetch from enquiries table where NFD = today
+      let query = supabase
         .from('enquiries')
         .select('*')
         .eq('NFD', formattedDate);
 
+      // Exclude inquiries that are marked as deal_done or deal_lost via progress
+      if (completedIds.length > 0) {
+        query = query.not('id', 'in', `(${completedIds.join(',')})`);
+      }
+
+      const { data: nfdData, error: nfdError } = await query;
+
       if (nfdError) throw nfdError;
 
-      console.log('Enquiries with NFD = today:', nfdData?.length || 0);
+      console.log('Enquiries with NFD = today (after excluding completed):', nfdData?.length || 0);
 
       // Transform the NFD data to match the Enquiry type
       const nfdTransformedData: Enquiry[] = (nfdData || []).map(enquiry => ({
