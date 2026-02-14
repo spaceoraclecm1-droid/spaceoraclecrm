@@ -73,6 +73,17 @@ const getPhoneCallUrl = (mobile: string): string => {
   return `tel:${numberWithCountryCode}`;
 };
 
+const formatDisplayDate = (value?: string): string => {
+  if (!value) return '-';
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('en-GB');
+  }
+
+  return value;
+};
+
 // Fetch unique inquiry IDs that have a 'deal_done' progress entry
 const fetchDealDoneInquiryIds = async (): Promise<(string | number)[]> => {
   try {
@@ -137,34 +148,14 @@ export default function NewInquiries() {
       
       console.log('Fetching new inquiries...');
       
-      // First, get all inquiry IDs from the Inquiry_Progress table
-      const { data: progressData, error: progressError } = await supabase
-        .from('Inquiry_Progress')
-        .select('eid');
-        
-      if (progressError) {
-        console.error('Error fetching from Inquiry_Progress table:', progressError);
-        throw progressError;
-      }
-      
-      // Extract the eids (inquiry ids) that have progress entries
-      const inquiryIdsWithProgress = progressData.map(item => item.eid);
-      console.log('Inquiries with progress entries:', inquiryIdsWithProgress.length, inquiryIdsWithProgress);
-
       // Also get all 'deal_done' inquiry IDs to explicitly exclude
       const dealDoneIds = await fetchDealDoneInquiryIds();
       
-      // Query to get new inquiries EXCLUDING any that have matching IDs in Inquiry_Progress table
+      // Query to get new inquiries
       let query = supabase
         .from('enquiries')
         .select('*')
         .eq('Enquiry Progress', 'New');
-        
-      // If there are inquiries with progress, exclude them
-      if (inquiryIdsWithProgress.length > 0) {
-        // This ensures that any inquiry ID that matches an eid in Inquiry_Progress is excluded
-        query = query.not('id', 'in', `(${inquiryIdsWithProgress.join(',')})`);
-      }
 
       // Explicitly exclude deal_done inquiries as well (redundant safety)
       if (dealDoneIds.length > 0) {
@@ -178,10 +169,31 @@ export default function NewInquiries() {
         throw error;
       }
 
-      console.log('New inquiries fetched (EXCLUDING those with ANY progress entries):', data?.length || 0);
+      console.log('New inquiries fetched:', data?.length || 0);
       
       // Ensure data is treated as EnquiryRecord[]
       const typedData = data as EnquiryRecord[];
+
+      const inquiryIds = typedData.map(enquiry => enquiry.id);
+      const progressDateByInquiry = new Map<string | number, string>();
+
+      if (inquiryIds.length > 0) {
+        const { data: progressRows, error: progressError } = await supabase
+          .from('Inquiry_Progress')
+          .select('eid, date, created_at')
+          .in('eid', inquiryIds)
+          .order('created_at', { ascending: false });
+
+        if (progressError) {
+          console.error('Error fetching progress dates for new inquiries:', progressError);
+        } else {
+          (progressRows || []).forEach((row: any) => {
+            if (!progressDateByInquiry.has(row.eid) && row.date) {
+              progressDateByInquiry.set(row.eid, row.date);
+            }
+          });
+        }
+      }
       
       // Transform the data to match our Inquiry type
       const transformedData: Inquiry[] = typedData.map(enquiry => ({
@@ -198,10 +210,10 @@ export default function NewInquiries() {
         budget: enquiry.Budget || '',
         area: enquiry.Area || '',
         lastRemarks: enquiry["Last Remarks"] || '',
-        nfd: enquiry.NFD || ''
+        nfd: enquiry.NFD || progressDateByInquiry.get(enquiry.id) || ''
       }));
       
-      console.log('Final list of new inquiries (with NO progress entries):', transformedData.length);
+      console.log('Final list of new inquiries:', transformedData.length);
       setInquiries(transformedData);
       setFilteredInquiries(transformedData);
     } catch (error) {
@@ -466,7 +478,7 @@ export default function NewInquiries() {
               <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#c69c6d]"></div>
             </div>
           ) : (
-            <table className="premium-table">
+            <table className="premium-table premium-table-wrap w-full">
               <thead>
                 <tr>
                   <th>Client</th>
@@ -484,8 +496,8 @@ export default function NewInquiries() {
                   filteredInquiries.map(inquiry => (
                     <tr key={inquiry.id}>
                       <td>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1">
+                        <div className="flex items-start gap-3">
+                          <div className="flex items-center gap-1 flex-shrink-0">
                             <Link
                               href={`/enquiry/${inquiry.id}/edit`}
                               className="p-1.5 text-gray-600 hover:text-[#c69c6d] transition-colors rounded-lg hover:bg-gray-100"
@@ -505,10 +517,10 @@ export default function NewInquiries() {
                               </svg>
                             </Link>
                           </div>
-                          <div>
-                            <div className="font-medium">{inquiry.clientName}</div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                              <span>{inquiry.mobile}</span>
+                          <div className="min-w-0">
+                            <div className="font-medium break-words text-gray-900 dark:text-white">{inquiry.clientName}</div>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="break-words">{inquiry.mobile}</span>
                               <a
                                 href={getWhatsAppUrl(inquiry.mobile)}
                                 target="_blank"
@@ -553,14 +565,16 @@ export default function NewInquiries() {
                         {inquiry.nfd || '-'}
                       </td>
                       <td>
-                        <div className="max-w-[200px]">
-                          <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                        <div className="max-w-[240px]">
+                          <div className="text-sm text-gray-600 dark:text-gray-400 break-words whitespace-normal leading-snug">
                             {inquiry.lastRemarks || 'No remarks yet'}
                           </div>
                         </div>
                       </td>
                       <td>
-                        {inquiry.dateCreated || '-'}
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {formatDisplayDate(inquiry.dateCreated)}
+                        </span>
                       </td>
                     </tr>
                   ))

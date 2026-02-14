@@ -18,6 +18,7 @@ interface Inquiry {
   assignedEmployee: string;
   dateCreated: string;
   sourceType: 'nfd';
+  nfd?: string;
 }
 
 // Supabase response types
@@ -110,7 +111,8 @@ export default function TodayInquiries() {
           source: enquiry.source,
           assignedEmployee: enquiry.assignedEmployee,
           dateCreated: enquiry.dateCreated,
-          sourceType: 'nfd'
+          sourceType: 'nfd',
+          nfd: enquiry.followUpDate
         })).filter((inq) => !completedIdSet.has(String(inq.id)));
 
         setInquiries(convertedInquiries);
@@ -210,7 +212,8 @@ export default function TodayInquiries() {
         source: enquiry["Enquiry Source"] || 'Unknown',
         assignedEmployee: enquiry["Assigned To"] || '',
         dateCreated: enquiry["Created Date"] || new Date().toISOString(),
-        sourceType: 'nfd'
+        sourceType: 'nfd',
+        nfd: enquiry.NFD || undefined
       }));
 
       console.log('Total today\'s inquiries (after excluding completed deals):', transformedData.length);
@@ -409,7 +412,7 @@ export default function TodayInquiries() {
                         </div>
                       </td>
                       <td>
-                        {'-'}
+                        {inquiry.nfd || '-'}
                       </td>
                       <td>
                         <div className="max-w-[200px]">

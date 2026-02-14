@@ -164,6 +164,15 @@ h1, h2, h3, h4, h5, h6 {
   @apply hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors;
 }
 
+/* Table variant with wrapped content */
+.premium-table-wrap td {
+  @apply whitespace-normal break-words align-top;
+}
+
+.premium-table-wrap th {
+  @apply align-top;
+}
+
 /* Mobile responsive tables */
 @media (max-width: 767px) {
   .premium-table {

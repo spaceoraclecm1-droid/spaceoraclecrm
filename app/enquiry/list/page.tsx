@@ -105,6 +105,17 @@ const getPhoneCallUrl = (mobile: string): string => {
   return `tel:${numberWithCountryCode}`;
 };
 
+const formatDisplayDate = (value?: string): string => {
+  if (!value) return '-';
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('en-GB');
+  }
+
+  return value;
+};
+
 export default function EnquiryList() {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [filteredEnquiries, setFilteredEnquiries] = useState<Enquiry[]>([]);
@@ -471,7 +482,7 @@ export default function EnquiryList() {
               <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#c69c6d]"></div>
             </div>
           ) : (
-            <table className="premium-table">
+            <table className="premium-table premium-table-wrap w-full">
               <thead>
                 <tr>
                   <th>Client</th>
@@ -488,8 +499,8 @@ export default function EnquiryList() {
                 {filteredEnquiries.map(enquiry => (
                   <tr key={enquiry.id}>
                     <td data-label="Client">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
+                      <div className="flex items-start gap-3">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <Link
                             href={`/enquiry/${enquiry.id}/edit`}
                             className="p-1.5 text-gray-600 hover:text-[#c69c6d] transition-colors rounded-lg hover:bg-gray-100"
@@ -509,30 +520,28 @@ export default function EnquiryList() {
                             </svg>
                           </Link>
                         </div>
-                        <div>
-                          <div className="font-medium">{enquiry["Client Name"]}</div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <span className="flex items-center gap-1">
-                              {enquiry["Mobile"]}
-                              <a
-                                href={getWhatsAppUrl(enquiry["Mobile"])}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                                title="Open in WhatsApp"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                WhatsApp
-                              </a>
-                              <a
-                                href={getPhoneCallUrl(enquiry["Mobile"])}
-                                className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                title="Call this number"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                Call
-                              </a>
-                            </span>
+                        <div className="min-w-0">
+                          <div className="font-medium break-words text-gray-900 dark:text-white">{enquiry["Client Name"]}</div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="break-words">{enquiry["Mobile"]}</span>
+                            <a
+                              href={getWhatsAppUrl(enquiry["Mobile"])}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                              title="Open in WhatsApp"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              WhatsApp
+                            </a>
+                            <a
+                              href={getPhoneCallUrl(enquiry["Mobile"])}
+                              className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              title="Call this number"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Call
+                            </a>
                           </div>
                         </div>
                       </div>
@@ -560,14 +569,16 @@ export default function EnquiryList() {
                       {enquiry["NFD"] || '-'}
                     </td>
                     <td data-label="Last Remarks">
-                      <div className="max-w-[200px]">
-                        <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                      <div className="max-w-[240px]">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 break-words whitespace-normal leading-snug">
                           {enquiry["Last Remarks"] || 'No remarks yet'}
                         </div>
                       </div>
                     </td>
                     <td data-label="Created Date">
-                      {enquiry["Created Date"] || '-'}
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {formatDisplayDate(enquiry["Created Date"])}
+                      </span>
                     </td>
                   </tr>
                 ))}

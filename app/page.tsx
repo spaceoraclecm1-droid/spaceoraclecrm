@@ -271,7 +271,8 @@ export default function Home() {
         source: (enquiry["Enquiry Source"] || 'REF') as InquirySource,
         assignedEmployee: enquiry["Assigned To"] || '',
         dateCreated: enquiry["Created Date"] || new Date().toISOString(),
-        category: 'today'
+        category: 'today',
+        followUpDate: enquiry.NFD || undefined
       }));
 
       return nfdTransformedData;
