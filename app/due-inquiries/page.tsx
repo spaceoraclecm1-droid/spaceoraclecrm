@@ -203,22 +203,27 @@ export default function DueInquiries() {
 
       if (error) throw error;
       
-      // Filter inquiries using ONLY the NFD logic:
-      // NFD is earlier than today (not including today)
+      // Filter inquiries: NFD earlier than today AND not lost/done/cancelled
       const filteredData = data.filter(enquiry => {
+        // Drop deal lost / deal done / cancelled by status text as a final safety net
+        const status = (enquiry["Enquiry Progress"] || '').toLowerCase();
+        if (status.includes('done') || status.includes('lost') || status.includes('cancelled')) {
+          return false;
+        }
+
         // Skip if no NFD
         if (!enquiry.NFD) return false;
-        
+
         // Parse the NFD date
         const [day, month, year] = enquiry.NFD.split('/').map(Number);
-        
+
         // Check if this is a valid date
         if (isNaN(day) || isNaN(month) || isNaN(year)) return false;
-        
+
         // Create Date object for NFD (with time set to midnight)
         const nfdDate = new Date(year, month - 1, day);
-        
-        // The only condition: NFD is earlier than today
+
+        // NFD is earlier than today
         return nfdDate < todayDate;
       });
       

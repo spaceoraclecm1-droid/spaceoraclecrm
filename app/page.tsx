@@ -267,8 +267,14 @@ export default function Home() {
 
       console.log('Enquiries with NFD = today (after excluding completed):', nfdData?.length || 0);
 
+      // Drop any leftover lost/done/cancelled rows by status text as a final safety net
+      const filteredToday = (nfdData || []).filter(enquiry => {
+        const status = (enquiry["Enquiry Progress"] || '').toLowerCase();
+        return !status.includes('done') && !status.includes('lost') && !status.includes('cancelled');
+      });
+
       // Transform the NFD data to match the Enquiry type
-      const nfdTransformedData: Enquiry[] = (nfdData || []).map(enquiry => ({
+      const nfdTransformedData: Enquiry[] = filteredToday.map(enquiry => ({
         id: enquiry.id,
         clientName: enquiry["Client Name"] || 'Unknown Client',
         mobile: enquiry.Mobile || '',
@@ -305,54 +311,59 @@ export default function Home() {
 
       console.log('Fetching due inquiries (before today)');
       
-      // Get inquiry IDs from the Inquiry_Progress table that have "deal_lost" progress type
-      const { data: dealLostData, error: dealLostError } = await supabase
+      // Get inquiry IDs from the Inquiry_Progress table that have "deal_lost" or "deal_done"
+      const { data: completedProgressData, error: dealLostError } = await supabase
         .from('Inquiry_Progress')
         .select('eid')
-        .eq('progress_type', 'deal_lost')
+        .in('progress_type', ['deal_lost', 'deal_done'])
         .limit(100000);
 
       if (dealLostError) {
-        console.error('Error fetching deal_lost entries from Inquiry_Progress table:', dealLostError);
+        console.error('Error fetching deal_lost/deal_done entries from Inquiry_Progress table:', dealLostError);
         throw dealLostError;
       }
 
-      // Extract the eids (inquiry ids) that have deal_lost progress entries
-      const dealLostInquiryIds = new Set(dealLostData.map(item => item.eid));
-      console.log('Inquiries with deal_lost progress to exclude from due inquiries:', dealLostInquiryIds.size);
+      // Extract the eids (inquiry ids) that are completed (lost or done)
+      const completedInquiryIds = new Set(completedProgressData.map(item => item.eid));
+      console.log('Inquiries with deal_lost/deal_done progress to exclude from due inquiries:', completedInquiryIds.size);
 
-      // Fetch all enquiries (also exclude Deal Lost by status as a safety net)
+      // Fetch all enquiries (also exclude Deal Lost / Deal Done by status as a safety net)
       let enquiriesQuery = supabase
         .from('enquiries')
         .select('*')
-        .neq('Enquiry Progress', 'Deal Lost');
+        .neq('Enquiry Progress', 'Deal Lost')
+        .neq('Enquiry Progress', 'Deal Done');
 
-      // Exclude inquiries with deal_lost progress if there are any
-      if (dealLostInquiryIds.size > 0) {
-        const dealLostArray = Array.from(dealLostInquiryIds);
-        enquiriesQuery = enquiriesQuery.not('id', 'in', `(${dealLostArray.join(',')})`);
+      // Exclude inquiries with deal_lost/deal_done progress if there are any
+      if (completedInquiryIds.size > 0) {
+        const completedArray = Array.from(completedInquiryIds);
+        enquiriesQuery = enquiriesQuery.not('id', 'in', `(${completedArray.join(',')})`);
       }
-      
+
       const { data, error } = await enquiriesQuery;
 
       if (error) throw error;
 
-      // Filter inquiries using ONLY the NFD logic:
-      // NFD is earlier than today (not including today)
+      // Filter inquiries: NFD earlier than today AND not lost/done/cancelled
       const filteredData = (data || []).filter(enquiry => {
+        const status = (enquiry["Enquiry Progress"] || '').toLowerCase();
+        if (status.includes('done') || status.includes('lost') || status.includes('cancelled')) {
+          return false;
+        }
+
         // Skip if no NFD
         if (!enquiry.NFD) return false;
 
         // Parse the NFD date
         const [day, month, year] = enquiry.NFD.split('/').map(Number);
-        
+
         // Check if this is a valid date
         if (isNaN(day) || isNaN(month) || isNaN(year)) return false;
-        
+
         // Create Date object for NFD (with time set to midnight)
         const nfdDate = new Date(year, month - 1, day);
-        
-        // The only condition: NFD is earlier than today
+
+        // NFD is earlier than today
         return nfdDate < todayDate;
       });
 
@@ -390,18 +401,46 @@ export default function Home() {
 
       console.log('Fetching yesterday\'s data with date:', yesterdayFormatted);
 
-      // Fetch enquiries where NFD is yesterday
-      const { data, error } = await supabase
+      // Fetch all 'deal_done' and 'deal_lost' inquiry IDs to exclude
+      const { data: completedData, error: completedError } = await supabase
+        .from('Inquiry_Progress')
+        .select('eid')
+        .in('progress_type', ['deal_done', 'deal_lost'])
+        .limit(100000);
+
+      if (completedError) {
+        console.error('Error fetching completed inquiry IDs for yesterday:', completedError);
+        throw completedError;
+      }
+
+      const yesterdayCompletedIds = Array.from(new Set(completedData.map(item => item.eid)));
+
+      // Fetch enquiries where NFD is yesterday (also exclude Deal Lost / Deal Done by status)
+      let yesterdayQuery = supabase
         .from('enquiries')
         .select('*')
-        .eq('NFD', yesterdayFormatted);
+        .eq('NFD', yesterdayFormatted)
+        .neq('Enquiry Progress', 'Deal Lost')
+        .neq('Enquiry Progress', 'Deal Done');
+
+      if (yesterdayCompletedIds.length > 0) {
+        yesterdayQuery = yesterdayQuery.not('id', 'in', `(${yesterdayCompletedIds.join(',')})`);
+      }
+
+      const { data, error } = await yesterdayQuery;
 
       if (error) throw error;
 
-      console.log('Yesterday\'s enquiries found:', data?.length || 0);
+      console.log('Yesterday\'s enquiries found (after excluding completed):', data?.length || 0);
+
+      // Drop any leftover lost/done/cancelled rows by status text as a final safety net
+      const filteredYesterday = (data || []).filter(enquiry => {
+        const status = (enquiry["Enquiry Progress"] || '').toLowerCase();
+        return !status.includes('done') && !status.includes('lost') && !status.includes('cancelled');
+      });
 
       // Transform the data to match the Enquiry type
-      const transformedData: Enquiry[] = (data || []).map(enquiry => ({
+      const transformedData: Enquiry[] = filteredYesterday.map(enquiry => ({
         id: enquiry.id,
         clientName: enquiry["Client Name"] || 'Unknown Client',
         mobile: enquiry.Mobile || '',
