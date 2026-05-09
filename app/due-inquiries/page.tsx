@@ -90,7 +90,8 @@ const fetchDealDoneInquiryIds = async (): Promise<(string | number)[]> => {
     const { data, error } = await supabase
       .from('Inquiry_Progress')
       .select('eid')
-      .eq('progress_type', 'deal_done');
+      .eq('progress_type', 'deal_done')
+      .limit(100000);
 
     if (error) throw error;
 
@@ -162,13 +163,14 @@ export default function DueInquiries() {
       const { data: dealLostData, error: dealLostError } = await supabase
         .from('Inquiry_Progress')
         .select('eid')
-        .eq('progress_type', 'deal_lost');
-        
+        .eq('progress_type', 'deal_lost')
+        .limit(100000);
+
       if (dealLostError) {
         console.error('Error fetching deal_lost entries from Inquiry_Progress table:', dealLostError);
         throw dealLostError;
       }
-      
+
       // Extract the eids (inquiry ids) that have deal_lost progress entries
       const dealLostInquiryIds = new Set(dealLostData.map(item => item.eid));
       console.log('Inquiries with deal_lost progress to exclude from due inquiries:', dealLostInquiryIds.size);
@@ -177,12 +179,14 @@ export default function DueInquiries() {
       const dealDoneIds = await fetchDealDoneInquiryIds();
       const dealDoneIdSet = new Set(dealDoneIds);
       console.log('Inquiries with deal_done progress to exclude from due inquiries:', dealDoneIdSet.size);
-      
-      // Fetch all enquiries
+
+      // Fetch all enquiries (also exclude Deal Lost / Deal Done by status as a safety net)
       let enquiriesQuery = supabase
         .from('enquiries')
-        .select('*');
-        
+        .select('*')
+        .neq('Enquiry Progress', 'Deal Lost')
+        .neq('Enquiry Progress', 'Deal Done');
+
       // Exclude inquiries with deal_lost progress if there are any
       if (dealLostInquiryIds.size > 0) {
         const dealLostArray = Array.from(dealLostInquiryIds);

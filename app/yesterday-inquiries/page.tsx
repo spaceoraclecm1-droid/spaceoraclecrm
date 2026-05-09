@@ -49,20 +49,21 @@ const getPhoneCallUrl = (mobile: string): string => {
   return `tel:${numberWithCountryCode}`;
 };
 
-// Fetch unique inquiry IDs that have a 'deal_done' progress entry
-const fetchDealDoneInquiryIds = async (): Promise<(string | number)[]> => {
+// Fetch unique inquiry IDs that have a 'deal_done' or 'deal_lost' progress entry
+const fetchCompletedInquiryIds = async (): Promise<(string | number)[]> => {
   try {
     const { data, error } = await supabase
       .from('Inquiry_Progress')
       .select('eid')
-      .eq('progress_type', 'deal_done');
+      .in('progress_type', ['deal_done', 'deal_lost'])
+      .limit(100000);
 
     if (error) throw error;
 
     const ids = (data || []).map((row: any) => row.eid);
     return Array.from(new Set(ids));
   } catch (err) {
-    console.error("Error fetching deal_done inquiry IDs:", err);
+    console.error("Error fetching completed inquiry IDs:", err);
     return [];
   }
 };
@@ -110,30 +111,32 @@ export default function YesterdayInquiries() {
       
       console.log('Fetching yesterday\'s inquiries for date:', yesterdayFormatted);
 
-      // Fetch all 'deal_done' inquiry IDs to exclude
-      const dealDoneIds = await fetchDealDoneInquiryIds();
-      
-      // Fetch inquiries where NFD is yesterday
+      // Fetch all 'deal_done' and 'deal_lost' inquiry IDs to exclude
+      const completedIds = await fetchCompletedInquiryIds();
+
+      // Fetch inquiries where NFD is yesterday (also exclude Deal Lost / Deal Done by status)
       let query = supabase
         .from('enquiries')
         .select('*')
-        .eq('NFD', yesterdayFormatted);
+        .eq('NFD', yesterdayFormatted)
+        .neq('Enquiry Progress', 'Deal Lost')
+        .neq('Enquiry Progress', 'Deal Done');
 
-      // Exclude inquiries that are marked as deal_done via progress
-      if (dealDoneIds.length > 0) {
-        query = query.not('id', 'in', `(${dealDoneIds.join(',')})`);
+      // Exclude inquiries that are marked as deal_done or deal_lost via progress
+      if (completedIds.length > 0) {
+        query = query.not('id', 'in', `(${completedIds.join(',')})`);
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
-      
+
       console.log('Yesterday\'s inquiries fetched (pre-status filter):', data?.length || 0);
-      
-      // Filter out completed or cancelled inquiries
+
+      // Filter out completed, lost, or cancelled inquiries
       const filteredData = data.filter(enquiry => {
         const status = (enquiry["Enquiry Progress"] || '').toLowerCase();
-        return !status.includes('done') && !status.includes('cancelled');
+        return !status.includes('done') && !status.includes('lost') && !status.includes('cancelled');
       });
       
       console.log('Yesterday\'s inquiries after filtering:', filteredData.length);

@@ -90,7 +90,8 @@ const fetchDealDoneInquiryIds = async (): Promise<(string | number)[]> => {
     const { data, error } = await supabase
       .from('Inquiry_Progress')
       .select('eid')
-      .eq('progress_type', 'deal_done');
+      .eq('progress_type', 'deal_done')
+      .limit(100000);
 
     if (error) throw error;
 

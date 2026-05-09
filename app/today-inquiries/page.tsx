@@ -72,7 +72,8 @@ const fetchCompletedInquiryIds = async (): Promise<(string | number)[]> => {
     const { data, error } = await supabase
       .from('Inquiry_Progress')
       .select('eid')
-      .in('progress_type', ['deal_done', 'deal_lost']);
+      .in('progress_type', ['deal_done', 'deal_lost'])
+      .limit(100000);
 
     if (error) throw error;
 
@@ -173,11 +174,13 @@ export default function TodayInquiries() {
       // Fetch all 'deal_done' and 'deal_lost' inquiry IDs to exclude
       const completedIds = await fetchCompletedInquiryIds();
 
-      // Fetch from enquiries table where NFD = today (same as dashboard)
+      // Fetch from enquiries table where NFD = today (also exclude Deal Lost / Deal Done by status)
       let query = supabase
         .from('enquiries')
         .select('*')
-        .eq('NFD', formattedDate);
+        .eq('NFD', formattedDate)
+        .neq('Enquiry Progress', 'Deal Lost')
+        .neq('Enquiry Progress', 'Deal Done');
 
       // Exclude inquiries that are marked as deal_done or deal_lost via progress
       if (completedIds.length > 0) {
@@ -193,10 +196,10 @@ export default function TodayInquiries() {
       // Ensure nfdData is treated as EnquiryRecord[]
       const typedNfdData = nfdData as EnquiryRecord[];
 
-      // Filter out completed or cancelled inquiries from NFD data
+      // Filter out completed, lost, or cancelled inquiries from NFD data
       const filteredNfdData = typedNfdData.filter(enquiry => {
         const status = (enquiry["Enquiry Progress"] || '').toLowerCase();
-        return !status.includes('done') && !status.includes('cancelled');
+        return !status.includes('done') && !status.includes('lost') && !status.includes('cancelled');
       });
 
       console.log('NFD enquiries after status filtering:', filteredNfdData.length);

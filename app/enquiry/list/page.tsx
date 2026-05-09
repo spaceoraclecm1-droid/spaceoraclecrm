@@ -141,21 +141,23 @@ export default function EnquiryList() {
       const { data: dealLostData, error: dealLostError } = await supabase
         .from('Inquiry_Progress')
         .select('eid')
-        .eq('progress_type', 'deal_lost');
-        
+        .eq('progress_type', 'deal_lost')
+        .limit(100000);
+
       if (dealLostError) {
         console.error('Error fetching deal_lost entries from Inquiry_Progress table:', dealLostError);
         throw dealLostError;
       }
-      
-      // Extract the eids (inquiry ids) that have deal_lost progress entries
-      const dealLostInquiryIds = dealLostData.map(item => item.eid);
+
+      // Extract the eids (inquiry ids) that have deal_lost progress entries (deduped)
+      const dealLostInquiryIds = Array.from(new Set(dealLostData.map(item => item.eid)));
       console.log('Inquiries with deal_lost progress entries to exclude:', dealLostInquiryIds.length);
-      
-      // Start building the query
+
+      // Start building the query (also exclude any row whose status is already Deal Lost)
       let supabaseQuery = supabase
         .from('enquiries')
-        .select('*');
+        .select('*')
+        .neq('Enquiry Progress', 'Deal Lost');
 
       // Exclude inquiries with deal_lost progress if there are any
       if (dealLostInquiryIds.length > 0) {

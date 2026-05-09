@@ -95,21 +95,23 @@ export default function Home() {
       const { data: dealLostData, error: dealLostError } = await supabase
         .from('Inquiry_Progress')
         .select('eid')
-        .eq('progress_type', 'deal_lost');
+        .eq('progress_type', 'deal_lost')
+        .limit(100000);
 
       if (dealLostError) {
         console.error('Error fetching deal_lost entries from Inquiry_Progress table:', dealLostError);
         throw dealLostError;
       }
 
-      // Extract the eids (inquiry ids) that have deal_lost progress entries
-      const dealLostInquiryIds = dealLostData.map(item => item.eid);
+      // Extract the eids (inquiry ids) that have deal_lost progress entries (deduped)
+      const dealLostInquiryIds = Array.from(new Set(dealLostData.map(item => item.eid)));
       console.log('Inquiries with deal_lost progress to exclude from counts:', dealLostInquiryIds.length);
 
-      // Get total count, excluding deal_lost inquiries
+      // Get total count, excluding deal_lost inquiries (belt-and-suspenders: also exclude by Enquiry Progress)
       let totalCountQuery = supabase
         .from('enquiries')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .neq('Enquiry Progress', 'Deal Lost');
 
       // Exclude inquiries with deal_lost progress if there are any
       if (dealLostInquiryIds.length > 0) {
@@ -124,15 +126,16 @@ export default function Home() {
       // First, get all inquiry IDs from the Inquiry_Progress table
       const { data: progressData, error: progressError } = await supabase
         .from('Inquiry_Progress')
-        .select('eid');
+        .select('eid')
+        .limit(100000);
 
       if (progressError) {
         console.error('Error fetching from Inquiry_Progress table:', progressError);
         throw progressError;
       }
 
-      // Extract the eids (inquiry ids) that have progress entries
-      const inquiryIdsWithProgress = progressData.map(item => item.eid);
+      // Extract the eids (inquiry ids) that have progress entries (deduped)
+      const inquiryIdsWithProgress = Array.from(new Set(progressData.map(item => item.eid)));
 
       // Query to count new inquiries EXCLUDING any that have matching IDs in Inquiry_Progress table
       let newInquiriesQuery = supabase
@@ -194,7 +197,8 @@ export default function Home() {
       const { data: dealsDoneData, error: dealsError } = await supabase
         .from('Inquiry_Progress')
         .select('eid')
-        .eq('progress_type', 'deal_done');
+        .eq('progress_type', 'deal_done')
+        .limit(100000);
 
       if (dealsError) {
         console.error('Error fetching deal_done entries:', dealsError);
@@ -233,21 +237,24 @@ export default function Home() {
       const { data: completedData, error: completedError } = await supabase
         .from('Inquiry_Progress')
         .select('eid')
-        .in('progress_type', ['deal_done', 'deal_lost']);
+        .in('progress_type', ['deal_done', 'deal_lost'])
+        .limit(100000);
 
       if (completedError) {
         console.error('Error fetching completed inquiry IDs:', completedError);
         throw completedError;
       }
 
-      const completedIds = completedData.map(item => item.eid);
+      const completedIds = Array.from(new Set(completedData.map(item => item.eid)));
       console.log('Completed inquiries to exclude from today:', completedIds.length);
 
-      // Fetch from enquiries table where NFD = today
+      // Fetch from enquiries table where NFD = today (also exclude Deal Lost / Deal Done by status)
       let query = supabase
         .from('enquiries')
         .select('*')
-        .eq('NFD', formattedDate);
+        .eq('NFD', formattedDate)
+        .neq('Enquiry Progress', 'Deal Lost')
+        .neq('Enquiry Progress', 'Deal Done');
 
       // Exclude inquiries that are marked as deal_done or deal_lost via progress
       if (completedIds.length > 0) {
@@ -302,22 +309,24 @@ export default function Home() {
       const { data: dealLostData, error: dealLostError } = await supabase
         .from('Inquiry_Progress')
         .select('eid')
-        .eq('progress_type', 'deal_lost');
-        
+        .eq('progress_type', 'deal_lost')
+        .limit(100000);
+
       if (dealLostError) {
         console.error('Error fetching deal_lost entries from Inquiry_Progress table:', dealLostError);
         throw dealLostError;
       }
-      
+
       // Extract the eids (inquiry ids) that have deal_lost progress entries
       const dealLostInquiryIds = new Set(dealLostData.map(item => item.eid));
       console.log('Inquiries with deal_lost progress to exclude from due inquiries:', dealLostInquiryIds.size);
-      
-      // Fetch all enquiries
+
+      // Fetch all enquiries (also exclude Deal Lost by status as a safety net)
       let enquiriesQuery = supabase
         .from('enquiries')
-        .select('*');
-        
+        .select('*')
+        .neq('Enquiry Progress', 'Deal Lost');
+
       // Exclude inquiries with deal_lost progress if there are any
       if (dealLostInquiryIds.size > 0) {
         const dealLostArray = Array.from(dealLostInquiryIds);
@@ -432,14 +441,15 @@ export default function Home() {
                 // First, get inquiry IDs from the Inquiry_Progress table
                 const { data: progressData, error: progressError } = await supabase
                   .from('Inquiry_Progress')
-                  .select('eid');
+                  .select('eid')
+                  .limit(100000);
 
                 if (progressError) {
                   throw progressError;
                 }
 
-                // Extract the eids (inquiry ids) that have progress entries
-                const inquiryIdsWithProgress = progressData.map(item => item.eid);
+                // Extract the eids (inquiry ids) that have progress entries (deduped)
+                const inquiryIdsWithProgress = Array.from(new Set(progressData.map(item => item.eid)));
 
                 // Query to get new inquiries EXCLUDING any that have matching IDs in Inquiry_Progress table
                 let newInquiriesQuery = supabase
