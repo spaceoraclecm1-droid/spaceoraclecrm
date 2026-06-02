@@ -3,8 +3,8 @@ import { HousingSupabaseSync } from './supabase-sync';
 import { ProcessedLead } from './types';
 
 export class HousingService {
-  private apiClient: HousingAPIClient;
-  private supabaseSync: HousingSupabaseSync;
+  public apiClient: HousingAPIClient;
+  public supabaseSync: HousingSupabaseSync;
 
   constructor() {
     this.apiClient = new HousingAPIClient();
@@ -119,6 +119,32 @@ export class HousingService {
     }
   }
 
+  async testFetchWithTimeRange(startTime: number, endTime: number): Promise<{
+    success: boolean;
+    message: string;
+    data?: ProcessedLead[];
+    count?: number;
+  }> {
+    try {
+      const rawLeads = await this.apiClient.fetchLeads(
+        startTime.toString(),
+        endTime.toString()
+      );
+      const processedLeads = rawLeads.map(lead => this.apiClient.processLead(lead));
+      return {
+        success: true,
+        message: `Successfully fetched ${processedLeads.length} leads for time range`,
+        data: processedLeads,
+        count: processedLeads.length
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error in testFetchWithTimeRange: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
   async manualFetch(hoursBack: number = 24): Promise<{
     success: boolean;
     message: string;
@@ -162,6 +188,15 @@ export class HousingService {
         success: false,
         message: `Error fetching leads: ${error instanceof Error ? error.message : String(error)}`
       };
+    }
+  }
+
+  async filterExistingLeads(leads: ProcessedLead[]): Promise<ProcessedLead[]> {
+    try {
+      return await this.supabaseSync.filterExistingLeads(leads);
+    } catch (error) {
+      console.error('[HousingService] Error filtering existing leads:', error);
+      return leads;
     }
   }
 

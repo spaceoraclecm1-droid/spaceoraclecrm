@@ -57,12 +57,12 @@ export async function GET(request: NextRequest) {
 
     // Log any errors from individual lead processing
     if (result.details) {
-      const errors = result.details.filter(d => d.status === 'error');
-      const skipped = result.details.filter(d => d.status === 'skipped');
+      const errors = result.details.filter((d: any) => d.status === 'error');
+      const skipped = result.details.filter((d: any) => d.status === 'skipped');
 
       if (errors.length > 0) {
         console.log(`[${requestId}] ⚠️ Leads with errors:`, errors.length);
-        errors.forEach((error, index) => {
+        errors.forEach((error: any, index: number) => {
           console.log(`[${requestId}]   Error ${index + 1}:`, {
             clientName: error.lead.clientName,
             mobile: error.lead.mobile,
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
 
       if (skipped.length > 0) {
         console.log(`[${requestId}] ⏭️ Leads skipped (duplicates):`, skipped.length);
-        skipped.forEach((skip, index) => {
+        skipped.forEach((skip: any, index: number) => {
           console.log(`[${requestId}]   Skipped ${index + 1}:`, {
             clientName: skip.lead.clientName,
             mobile: skip.lead.mobile,

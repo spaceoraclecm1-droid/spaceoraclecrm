@@ -23,11 +23,14 @@ export async function GET(request: NextRequest) {
     // Process the leads but don't add to database
     const processedLeads = rawLeads.map(lead => housingService.apiClient.processLead(lead));
 
+    // Filter out leads that already exist in Supabase (excluding "Deal Lost")
+    const filteredLeads = await housingService.filterExistingLeads(processedLeads);
+
     return NextResponse.json({
       success: true,
-      message: `Found ${processedLeads.length} leads from Housing.com`,
-      data: processedLeads,
-      count: processedLeads.length,
+      message: `Found ${filteredLeads.length} leads from Housing.com`,
+      data: filteredLeads,
+      count: filteredLeads.length,
       timestamp: new Date().toISOString(),
       requestId: requestId
     });

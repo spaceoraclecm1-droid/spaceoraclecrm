@@ -4,40 +4,98 @@ import { ProcessedLead } from './types';
 export class HousingSupabaseSync {
   async checkLeadExists(mobile: string): Promise<boolean> {
     try {
-      // Clean mobile number format for consistent checking
-      const cleanedMobile = mobile.replace(/[\s\-\(\)]/g, '');
+      const raw = mobile.trim();
+      const digits = raw.replace(/[^0-9]/g, '');
+      const searchVariations = new Set<string>([raw, digits]);
 
+      if (digits.length >= 10) {
+        const last10 = digits.slice(-10);
+        searchVariations.add(last10);
+        searchVariations.add(`0${last10}`);
+        searchVariations.add(`+91${last10}`);
+        searchVariations.add(`91${last10}`);
+        searchVariations.add(`+91 ${last10}`);
+      }
+
+      // Only check active enquiries; ignore those that are marked as "Deal Lost"
       const { data, error } = await supabase
         .from('enquiries')
         .select('id')
-        .eq('Mobile', mobile)
-        .single();
+        .in('Mobile', Array.from(searchVariations))
+        .neq('Enquiry Progress', 'Deal Lost');
 
-      // If exact match not found, try with cleaned mobile number
-      if (error && error.code === 'PGRST116') {
-        const { data: cleanedData, error: cleanedError } = await supabase
-          .from('enquiries')
-          .select('id')
-          .eq('Mobile', cleanedMobile)
-          .single();
-
-        if (cleanedError && cleanedError.code !== 'PGRST116') {
-          console.error('Error checking lead existence with cleaned mobile:', cleanedError);
-          return false;
-        }
-
-        return !!cleanedData;
-      }
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+      if (error) {
         console.error('Error checking lead existence:', error);
         return false;
       }
 
-      return !!data;
+      return !!(data && data.length > 0);
     } catch (error) {
       console.error('Error in checkLeadExists:', error);
       return false;
+    }
+  }
+
+  async filterExistingLeads(leads: ProcessedLead[]): Promise<ProcessedLead[]> {
+    if (leads.length === 0) return [];
+
+    try {
+      const searchVariations = new Set<string>();
+      leads.forEach(lead => {
+        if (!lead.mobile) return;
+        const raw = lead.mobile.trim();
+        const digits = raw.replace(/[^0-9]/g, '');
+        searchVariations.add(raw);
+        searchVariations.add(digits);
+
+        if (digits.length >= 10) {
+          const last10 = digits.slice(-10);
+          searchVariations.add(last10);
+          searchVariations.add(`0${last10}`);
+          searchVariations.add(`+91${last10}`);
+          searchVariations.add(`91${last10}`);
+          searchVariations.add(`+91 ${last10}`);
+        }
+      });
+
+      if (searchVariations.size === 0) return leads;
+
+      // Only query active enquiries; ignore those that are marked as "Deal Lost"
+      const { data, error } = await supabase
+        .from('enquiries')
+        .select('Mobile')
+        .in('Mobile', Array.from(searchVariations))
+        .neq('Enquiry Progress', 'Deal Lost');
+
+      if (error) {
+        console.error('[HousingSupabaseSync] Error checking existing leads:', error);
+        return leads;
+      }
+
+      const existingMobiles = (data || []).map(item => item.Mobile);
+
+      // Helper function to check if two phone numbers match (comparing last 10 digits)
+      const phoneNumbersMatch = (phone1: string, phone2: string): boolean => {
+        const clean1 = phone1.replace(/[^0-9]/g, '');
+        const clean2 = phone2.replace(/[^0-9]/g, '');
+        if (!clean1 || !clean2) return false;
+        if (clean1 === clean2) return true;
+
+        const last10_1 = clean1.slice(-10);
+        const last10_2 = clean2.slice(-10);
+        return last10_1.length === 10 && last10_2.length === 10 && last10_1 === last10_2;
+      };
+
+      // Filter out leads that match any active existing mobile number in Supabase
+      return leads.filter(lead => {
+        const hasMatch = existingMobiles.some(existingMobile =>
+          phoneNumbersMatch(lead.mobile, existingMobile)
+        );
+        return !hasMatch;
+      });
+    } catch (error) {
+      console.error('[HousingSupabaseSync] Error in filterExistingLeads:', error);
+      return leads;
     }
   }
 

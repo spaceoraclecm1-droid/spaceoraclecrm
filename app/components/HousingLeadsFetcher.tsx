@@ -116,12 +116,12 @@ export default function HousingLeadsFetcher() {
         const { inserted, skipped, errors } = data.data;
         setAddStatus(`✅ Added ${inserted} leads | Skipped ${skipped} duplicates | ${errors} errors`);
 
-        // Remove successfully added leads from the list
+        // Remove successfully added or skipped (already existing) leads from the list
         setLeads(prev => prev.filter(lead =>
           !data.data?.details.find(detail =>
             detail.lead.clientName === lead.clientName &&
             detail.lead.mobile === lead.mobile &&
-            detail.status === 'inserted'
+            (detail.status === 'inserted' || detail.status === 'skipped')
           )
         ));
 
