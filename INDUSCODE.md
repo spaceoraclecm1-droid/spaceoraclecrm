@@ -116,3 +116,5 @@ Lead date accepts `lead_date`/`created_at`/`timestamp` (epoch s, ms, or ISO). Ha
 ## Cursor Rules
 
 `.cursor/rules/byterover-rules.mdc` is active: always invoke the `search-memories` MCP tool before any task and `create-memories` after completing one. This is a harness-level rule, not a project rule — honor it as the first/last step of substantive work.
+
+<!-- Force redeploy Thu Jul  9 20:03:29 IST 2026 -->
