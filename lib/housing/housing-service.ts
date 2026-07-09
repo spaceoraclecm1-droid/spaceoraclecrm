@@ -36,7 +36,6 @@ export class HousingService {
       );
 
       if (rawLeads.length === 0) {
-        console.log('No new leads found');
         await this.supabaseSync.updateLastFetchTimestamp(currentTimestamp);
         return {
           success: true,
@@ -49,9 +48,6 @@ export class HousingService {
           }
         };
       }
-
-      console.log(`Found ${rawLeads.length} new leads from Housing API`);
-
       // Process the leads
       const processedLeads: ProcessedLead[] = rawLeads.map(lead =>
         this.apiClient.processLead(lead)

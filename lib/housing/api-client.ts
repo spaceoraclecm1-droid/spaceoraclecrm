@@ -73,7 +73,6 @@ export class HousingAPIClient {
       // Log first few leads for debugging
       if (leads.length > 0) {
         leads.slice(0, 3).forEach((lead, index) => {
-          console.log(`  ${index + 1}. ${lead.lead_name} (${lead.lead_phone}) - ${lead.project_name}`);
         });
       }
 
