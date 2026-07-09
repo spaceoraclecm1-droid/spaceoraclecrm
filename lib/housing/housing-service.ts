@@ -48,6 +48,8 @@ export class HousingService {
           }
         };
       }
+
+
       // Process the leads
       const processedLeads: ProcessedLead[] = rawLeads.map(lead =>
         this.apiClient.processLead(lead)
@@ -184,6 +186,7 @@ export class HousingService {
     try {
       return await this.supabaseSync.filterExistingLeads(leads);
     } catch (error) {
+      console.error('[HousingService] Error filtering existing leads:', error);
       return leads;
     }
   }
@@ -198,9 +201,11 @@ export class HousingService {
 
       const syncResult = await this.supabaseSync.syncLeads(leads);
 
+      console.log(`[HousingService] Sync result:`, syncResult);
 
       return syncResult;
     } catch (error) {
+      console.error('[HousingService] Error adding leads to Supabase:', error);
       return {
         inserted: 0,
         skipped: 0,

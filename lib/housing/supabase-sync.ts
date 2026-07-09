@@ -68,6 +68,7 @@ export class HousingSupabaseSync {
         .neq('Enquiry Progress', 'Deal Lost');
 
       if (error) {
+        console.error('[HousingSupabaseSync] Error checking existing leads:', error);
         return leads;
       }
 
@@ -80,6 +81,7 @@ export class HousingSupabaseSync {
         return !hasMatch;
       });
     } catch (error) {
+      console.error('[HousingSupabaseSync] Error in filterExistingLeads:', error);
       return leads;
     }
   }
@@ -151,11 +153,13 @@ export class HousingSupabaseSync {
         .single();
 
       if (error) {
+        console.error('[HousingSupabaseSync] Error inserting lead:', error);
         return { id: '', success: false, error: error.message };
       }
 
       return { id: data.id, success: true };
     } catch (error) {
+      console.error('[HousingSupabaseSync] Error in insertLead:', error);
       return { id: '', success: false, error: String(error) };
     }
   }
@@ -198,6 +202,7 @@ export class HousingSupabaseSync {
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        console.error('[HousingSupabaseSync] Error fetching last fetch timestamp:', error);
       }
 
       if (data?.value) {
@@ -208,6 +213,7 @@ export class HousingSupabaseSync {
       const defaultTimestamp = Math.floor(Date.now() / 1000) - (24 * 3600);
       return defaultTimestamp;
     } catch (error) {
+      console.error('[HousingSupabaseSync] Error in getLastFetchTimestamp:', error);
       return Math.floor(Date.now() / 1000) - (24 * 3600);
     }
   }

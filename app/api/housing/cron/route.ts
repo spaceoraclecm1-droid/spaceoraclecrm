@@ -33,19 +33,11 @@ export async function GET(request: NextRequest) {
     const endTime = new Date();
     const duration = endTime.getTime() - startTime.getTime();
 
-      success: result.success,
-      message: result.message,
-      stats: result.stats,
-      duration: `${duration}ms`
-    });
+    console.log(`[${requestId}] Results: success=${result.success}, duration=${duration}ms`);
 
     // Log detailed results for debugging
     if (result.stats) {
-        fetched: result.stats.fetched,
-        inserted: result.stats.inserted,
-        skipped: result.stats.skipped,
-        errors: result.stats.errors
-      });
+      console.log(`[${requestId}] Stats: fetched=${result.stats.fetched}, inserted=${result.stats.inserted}`);
     }
 
     // Log any errors from individual lead processing
@@ -54,7 +46,9 @@ export async function GET(request: NextRequest) {
       const skipped = result.details.filter((d: any) => d.status === 'skipped');
 
       if (errors.length > 0) {
+        console.log(`[${requestId}] ⚠️ Leads with errors:`, errors.length);
         errors.forEach((error: any, index: number) => {
+          console.log(`[${requestId}]   Error ${index + 1}:`, {
             clientName: error.lead.clientName,
             mobile: error.lead.mobile,
             error: error.error
@@ -63,7 +57,9 @@ export async function GET(request: NextRequest) {
       }
 
       if (skipped.length > 0) {
+        console.log(`[${requestId}] ⏭️ Leads skipped (duplicates):`, skipped.length);
         skipped.forEach((skip: any, index: number) => {
+          console.log(`[${requestId}]   Skipped ${index + 1}:`, {
             clientName: skip.lead.clientName,
             mobile: skip.lead.mobile,
             reason: skip.error
@@ -89,6 +85,7 @@ export async function GET(request: NextRequest) {
     const endTime = new Date();
     const duration = endTime.getTime() - startTime.getTime();
 
+    console.error(`[${requestId}] [${endTime.toISOString()}] ❌ Cron job failed after ${duration}ms:`, {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       duration: `${duration}ms`

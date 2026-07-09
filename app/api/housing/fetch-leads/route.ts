@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
+    console.error(`[${requestId}] ❌ Error fetching Housing leads:`, error);
 
     return NextResponse.json(
       {
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
     // Process and add leads to Supabase
     const syncResult = await housingService.addLeadsToSupabase(leads);
 
+    console.log(`[${requestId}] ✅ Added leads to Supabase:`, syncResult);
 
     return NextResponse.json({
       success: true,
@@ -82,6 +84,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
+    console.error(`[${requestId}] ❌ Error adding leads to Supabase:`, error);
 
     return NextResponse.json(
       {

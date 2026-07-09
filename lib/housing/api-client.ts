@@ -21,8 +21,10 @@ export class HousingAPIClient {
   async fetchLeads(startDate: string, endDate: string): Promise<HousingLeadResponse[]> {
     const currentTime = Math.floor(Date.now() / 1000).toString();
     
+    console.log('[HousingAPIClient] Profile ID:', this.profileId ? `${this.profileId.substring(0, 4)}...` : 'NOT SET');
     
     const hash = generateHousingHash(this.encryptionKey, currentTime);
+    console.log('[HousingAPIClient] Hash generated:', hash.substring(0, 10) + '...');
 
     const params = new URLSearchParams({
       start_date: startDate,
@@ -33,6 +35,7 @@ export class HousingAPIClient {
     });
 
     const url = `${this.apiUrl}?${params.toString()}`;
+    console.log('[HousingAPIClient] Full URL:', url.replace(hash, 'HASH_HIDDEN').replace(this.profileId, 'ID_HIDDEN'));
     
     try {
       
@@ -44,26 +47,27 @@ export class HousingAPIClient {
         }
       });
 
+      console.log('[HousingAPIClient] Response headers:', Object.fromEntries(response.headers.entries()));
       
       const responseText = await response.text();
+      console.log('[HousingAPIClient] Raw response:', responseText.substring(0, 200));
 
       let data: HousingAPIResponse;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
+        console.error('[HousingAPIClient] Failed to parse response as JSON:', parseError);
         throw new Error(`Invalid JSON response from Housing API: ${responseText.substring(0, 100)}`);
       }
 
       if (!response.ok) {
-          status: response.status,
-          message: data.message,
-          data: data
-        });
+        console.error(`[HousingAPIClient] API request failed with status ${response.status}`);
         throw new Error(data.message || `API request failed with status ${response.status}`);
       }
 
       // Housing.com might return success without status field
       if (data.status && data.status !== 200) {
+        console.error('[HousingAPIClient] API returned non-200 status:', data);
         throw new Error(data.message || 'API returned non-success status');
       }
 
@@ -78,6 +82,7 @@ export class HousingAPIClient {
 
       return leads;
     } catch (error) {
+      console.error('[HousingAPIClient] Error fetching Housing leads:', error);
       throw error;
     }
   }

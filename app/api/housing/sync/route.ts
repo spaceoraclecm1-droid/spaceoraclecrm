@@ -2,17 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { HousingService } from '@/lib/housing/housing-service';
 
 export async function GET(request: NextRequest) {
+  console.log('[Housing Sync API] Request received at:', new Date().toISOString());
   
   try {
     const housingService = new HousingService();
     
     const result = await housingService.fetchAndSyncLatestLeads();
     
+    console.log('[Housing Sync API] Result:', JSON.stringify(result, null, 2));
     
     return NextResponse.json(result, { 
       status: result.success ? 200 : 500 
     });
   } catch (error) {
+    console.error('[Housing Sync API] Critical Error:', error);
+    console.error('[Housing Sync API] Error Stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     return NextResponse.json(
       { 

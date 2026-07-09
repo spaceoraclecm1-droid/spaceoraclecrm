@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     timestamp: new Date().toISOString()
   };
 
+  console.log('[Housing Debug] Configuration status:', debugInfo);
 
   return NextResponse.json(debugInfo);
 }
