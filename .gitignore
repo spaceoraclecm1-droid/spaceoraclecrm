@@ -54,3 +54,4 @@ test-housing-integration.js
 .next/
 .next_old/
 .next_old_can_not_delete/
+.next_*/
