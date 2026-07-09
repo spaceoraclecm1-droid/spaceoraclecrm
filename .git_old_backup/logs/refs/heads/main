@@ -1,0 +1,5 @@
+0000000000000000000000000000000000000000 6c1c5de501e19e6d3b1e19c5c90e140a6e041289 varunisrani <solovpxoffical@gmail.com> 1771066582 +0530	clone: from https://github.com/spaceoraclecm1-droid/spaceoraclecrm.git
+6c1c5de501e19e6d3b1e19c5c90e140a6e041289 a3c0b8cb241acddb033fd67d53f3368132ae279e varunisrani <solovpxoffical@gmail.com> 1771069482 +0530	commit: fix: improve inquiry tables and follow-up dates
+a3c0b8cb241acddb033fd67d53f3368132ae279e 4cd9fe31e004f4ea3e68a8ea98377b2c86df74b3 varunisrani <solovpxoffical@gmail.com> 1778310105 +0530	commit: c
+4cd9fe31e004f4ea3e68a8ea98377b2c86df74b3 00a34580244ca6d36c2b32c4ed4e31dff31ac57a varunisrani <solovpxoffical@gmail.com> 1778327877 +0530	commit: k
+00a34580244ca6d36c2b32c4ed4e31dff31ac57a a83b62db7cf50fd1e631f2425146413f35156f7d varunisrani <solovpxoffical@gmail.com> 1780381886 +0530	commit: Exclude Deal Lost enquiries from Housing duplicate checks and batch-filter leads

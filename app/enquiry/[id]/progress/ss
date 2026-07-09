@@ -1,0 +1,202 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { supabase } from '../../../utils/supabase';
+
+interface InquiryData {
+  id: string;
+  "Client Name": string;
+  "Remarks": string;
+  "Last Remarks": string;
+}
+
+export default function InquiryProgressPage({ params }: { params: { id: string } }) {
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [inquiryData, setInquiryData] = React.useState<InquiryData | null>(null);
+  const [showAddProgress, setShowAddProgress] = React.useState(false);
+
+  // Fetch inquiry data when component mounts
+  React.useEffect(() => {
+    fetchInquiryData();
+  }, [params.id]);
+
+  const fetchInquiryData = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('enquiries')
+        .select('id, "Client Name", "Remarks", "Last Remarks"')
+        .eq('id', params.id)
+        .single();
+
+      if (error) throw error;
+      setInquiryData(data);
+    } catch (error) {
+      console.error('Error fetching inquiry data:', error);
+      alert('Error fetching inquiry data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddProgress = async (newRemark: string) => {
+    if (!inquiryData) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Update the inquiry with new remarks
+      const { error } = await supabase
+        .from('enquiries')
+        .update({
+          "Last Remarks": inquiryData.Remarks, // Move current remarks to last remarks
+          "Remarks": newRemark // Set new remarks
+        })
+        .eq('id', params.id);
+
+      if (error) throw error;
+      
+      // Refresh the data
+      await fetchInquiryData();
+      setShowAddProgress(false);
+    } catch (error) {
+      console.error('Error adding progress:', error);
+      alert('Error adding progress. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="fade-in">
+      {/* Hero Section */}
+      <div className="relative mb-16">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1a2e29]/90 to-[#264a42]/90 rounded-2xl -z-10"></div>
+        <div className="absolute inset-0 bg-[url('/hero-pattern.svg')] opacity-10 mix-blend-overlay rounded-2xl -z-10"></div>
+        
+        <div className="relative py-12 px-8 text-white">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+            <div>
+              <Link
+                href="/enquiry/list"
+                className="text-[#e5d0b1] hover:text-white mb-4 inline-flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Back to Enquiries
+              </Link>
+              <h1 className="text-3xl font-bold">Inquiry Progress</h1>
+              {inquiryData && (
+                <p className="text-[#e5d0b1]">Progress history for {inquiryData["Client Name"]}</p>
+              )}
+            </div>
+            <button
+              onClick={() => setShowAddProgress(true)}
+              className="mt-4 md:mt-0 flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-white/20 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Progress
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress History */}
+      <div className="max-w-4xl mx-auto">
+        <div className="premium-card overflow-hidden">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#c69c6d]"></div>
+            </div>
+          ) : (
+            <div className="p-6 space-y-6">
+              {/* Last Remarks (Most Recent) */}
+              {inquiryData?.["Last Remarks"] && (
+                <div className="border-l-4 border-[#c69c6d] pl-4 py-2">
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Latest Progress</h3>
+                  <p className="text-gray-800 dark:text-gray-200">{inquiryData["Last Remarks"]}</p>
+                </div>
+              )}
+
+              {/* Previous Remarks */}
+              {inquiryData?.Remarks && (
+                <div className="border-l-4 border-gray-200 dark:border-gray-700 pl-4 py-2">
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Previous Progress</h3>
+                  <p className="text-gray-800 dark:text-gray-200">{inquiryData.Remarks}</p>
+                </div>
+              )}
+
+              {!inquiryData?.Remarks && !inquiryData?.["Last Remarks"] && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No progress history available
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Progress Modal */}
+      {showAddProgress && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add New Progress</h2>
+              <button
+                onClick={() => setShowAddProgress(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const newRemark = formData.get('newRemark') as string;
+              if (newRemark) {
+                handleAddProgress(newRemark);
+              }
+            }} className="space-y-4">
+              <div>
+                <label htmlFor="newRemark" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Progress Details
+                </label>
+                <textarea
+                  id="newRemark"
+                  name="newRemark"
+                  rows={4}
+                  className="premium-input w-full"
+                  placeholder="Enter progress details..."
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddProgress(false)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="premium-button"
+                >
+                  Save Progress
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+} 
