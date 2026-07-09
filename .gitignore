@@ -51,3 +51,6 @@ test-housing-integration.js
 # Claude Code directory
 .claude/
 .git_old_backup_can_not_delete/
+.next/
+.next_old/
+.next_old_can_not_delete/
