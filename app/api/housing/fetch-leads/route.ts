@@ -5,7 +5,6 @@ export async function GET(request: NextRequest) {
   const requestId = `fetch_${Date.now()}`;
 
   try {
-    console.log(`[${requestId}] 🏠 Fetching latest Housing.com leads for display...`);
 
     const housingService = new HousingService();
 
@@ -18,7 +17,6 @@ export async function GET(request: NextRequest) {
       endTime.toString()
     );
 
-    console.log(`[${requestId}] 📊 Found ${rawLeads.length} raw leads from Housing.com`);
 
     // Process the leads but don't add to database
     const processedLeads = rawLeads.map(lead => housingService.apiClient.processLead(lead));
@@ -36,7 +34,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error(`[${requestId}] ❌ Error fetching Housing leads:`, error);
 
     return NextResponse.json(
       {
@@ -55,7 +52,6 @@ export async function POST(request: NextRequest) {
   const requestId = `add_${Date.now()}`;
 
   try {
-    console.log(`[${requestId}] 🏠 Adding Housing leads to Supabase...`);
 
     const body = await request.json();
     const { leads } = body;
@@ -76,7 +72,6 @@ export async function POST(request: NextRequest) {
     // Process and add leads to Supabase
     const syncResult = await housingService.addLeadsToSupabase(leads);
 
-    console.log(`[${requestId}] ✅ Added leads to Supabase:`, syncResult);
 
     return NextResponse.json({
       success: true,
@@ -87,7 +82,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error(`[${requestId}] ❌ Error adding leads to Supabase:`, error);
 
     return NextResponse.json(
       {

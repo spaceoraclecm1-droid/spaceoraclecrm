@@ -23,19 +23,13 @@ export class HousingService {
     details?: any;
   }> {
     try {
-      console.log('[HousingService] Starting fetchAndSyncLatestLeads...');
       
       // Get the last fetch timestamp
-      console.log('[HousingService] Getting last fetch timestamp...');
       const lastFetchTimestamp = await this.supabaseSync.getLastFetchTimestamp();
       const currentTimestamp = Math.floor(Date.now() / 1000);
 
-      console.log(`[HousingService] Fetching leads from ${new Date(lastFetchTimestamp * 1000).toISOString()} to ${new Date(currentTimestamp * 1000).toISOString()}`);
-      console.log(`[HousingService] Start timestamp: ${lastFetchTimestamp}`);
-      console.log(`[HousingService] End timestamp: ${currentTimestamp}`);
 
       // Fetch leads from Housing API
-      console.log('[HousingService] Calling Housing API...');
       const rawLeads = await this.apiClient.fetchLeads(
         lastFetchTimestamp.toString(),
         currentTimestamp.toString()
@@ -63,7 +57,6 @@ export class HousingService {
         this.apiClient.processLead(lead)
       );
 
-      console.log(`[HousingService] Processing ${rawLeads.length} leads for database sync`);
 
       // Sync the processed leads to Supabase
       const syncResult = await this.supabaseSync.syncLeads(processedLeads);
@@ -195,7 +188,6 @@ export class HousingService {
     try {
       return await this.supabaseSync.filterExistingLeads(leads);
     } catch (error) {
-      console.error('[HousingService] Error filtering existing leads:', error);
       return leads;
     }
   }
@@ -207,15 +199,12 @@ export class HousingService {
     details: Array<{ lead: ProcessedLead; status: string; error?: string }>;
   }> {
     try {
-      console.log(`[HousingService] Adding ${leads.length} leads to Supabase...`);
 
       const syncResult = await this.supabaseSync.syncLeads(leads);
 
-      console.log(`[HousingService] Sync result:`, syncResult);
 
       return syncResult;
     } catch (error) {
-      console.error('[HousingService] Error adding leads to Supabase:', error);
       return {
         inserted: 0,
         skipped: 0,

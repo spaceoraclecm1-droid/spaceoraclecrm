@@ -68,7 +68,6 @@ export class HousingSupabaseSync {
         .neq('Enquiry Progress', 'Deal Lost');
 
       if (error) {
-        console.error('[HousingSupabaseSync] Error checking existing leads:', error);
         return leads;
       }
 
@@ -81,7 +80,6 @@ export class HousingSupabaseSync {
         return !hasMatch;
       });
     } catch (error) {
-      console.error('[HousingSupabaseSync] Error in filterExistingLeads:', error);
       return leads;
     }
   }
@@ -117,7 +115,6 @@ export class HousingSupabaseSync {
       // Check if lead already exists
       const exists = await this.checkLeadExists(lead.mobile);
       if (exists) {
-        console.log(`[HousingSupabaseSync] Lead with mobile ${lead.mobile} already exists, skipping...`);
         return { id: '', success: false, error: 'Lead already exists' };
       }
 
@@ -146,7 +143,6 @@ export class HousingSupabaseSync {
         'Assigned By': 'System'
       };
 
-      console.log(`[HousingSupabaseSync] Inserting lead: ${lead.clientName} (${cleanedMobile})`);
 
       const { data, error } = await supabase
         .from('enquiries')
@@ -155,14 +151,11 @@ export class HousingSupabaseSync {
         .single();
 
       if (error) {
-        console.error('[HousingSupabaseSync] Error inserting lead:', error);
         return { id: '', success: false, error: error.message };
       }
 
-      console.log(`[HousingSupabaseSync] Successfully inserted lead: ${lead.clientName} (${cleanedMobile}) with ID: ${data.id}`);
       return { id: data.id, success: true };
     } catch (error) {
-      console.error('[HousingSupabaseSync] Error in insertLead:', error);
       return { id: '', success: false, error: String(error) };
     }
   }
@@ -205,7 +198,6 @@ export class HousingSupabaseSync {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('[HousingSupabaseSync] Error fetching last fetch timestamp:', error);
       }
 
       if (data?.value) {
@@ -214,10 +206,8 @@ export class HousingSupabaseSync {
 
       // Default to 24 hours ago if no timestamp found
       const defaultTimestamp = Math.floor(Date.now() / 1000) - (24 * 3600);
-      console.log('[HousingSupabaseSync] Using default timestamp (24 hours ago):', defaultTimestamp);
       return defaultTimestamp;
     } catch (error) {
-      console.error('[HousingSupabaseSync] Error in getLastFetchTimestamp:', error);
       return Math.floor(Date.now() / 1000) - (24 * 3600);
     }
   }
@@ -233,14 +223,10 @@ export class HousingSupabaseSync {
         });
 
       if (error) {
-        console.log('[HousingSupabaseSync] system_config table not available, using fallback timestamp storage');
         // Fallback: Store timestamp in localStorage or use alternative method
-        console.log('[HousingSupabaseSync] Timestamp updated in memory only:', timestamp);
       } else {
-        console.log('[HousingSupabaseSync] Successfully updated last fetch timestamp:', timestamp);
       }
     } catch (error) {
-      console.log('[HousingSupabaseSync] Error updating last fetch timestamp (continuing operation):', error);
     }
   }
 }
