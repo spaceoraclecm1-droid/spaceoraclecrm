@@ -1,0 +1,5 @@
+# Ignore local artifacts
+.next/
+.next_*/
+node_modules/
+.vercel
