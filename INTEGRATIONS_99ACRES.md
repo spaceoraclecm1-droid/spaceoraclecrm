@@ -42,47 +42,56 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ## Lead field aliases
 
-The mapper accepts any of these keys and uses the first non-empty value:
+The mapper accepts any of these keys and uses the first non-empty value. The first row
+(`Confirmed by 99acres`) lists the keys the partner team actually sends — the alias
+rows below each accept back-compat keys from older/Housing-style payloads.
 
-| Target column | Accepted JSON keys |
+| Target column | Accepted JSON keys (tried in order) |
 |---|---|
-| `Client Name` | `lead_name`, `name`, `customer_name` |
-| `Mobile` | `phone`, `mobile`, `mobile_number`, `lead_phone` |
-| `Email` | `email`, `lead_email` |
-| `Enquiry For` | `project`, `project_name` |
-| `Property Type` | `property_type`, `category_type` |
-| `Area` | `locality`, `city`, `area` |
-| `Budget` | `budget`, `max_price`, `min_price` |
-| `Configuration` | `configuration`, `bhk`, `property_field` |
-| `Remarks` / `Last Remarks` | `message`, `remarks`, `comment` (decorated as "Lead from 99acres - …") |
-| `Created Date` | `lead_date`, `created_at`, `timestamp` (epoch s/ms, or ISO) |
+| `Client Name` | `name` → `lead_name` → `customer_name` |
+| `Mobile` | `phone` → `mobile` → `mobile_number` → `lead_phone` |
+| `Email` | `email` → `lead_email` |
+| `Enquiry For` | `property` → `notes` → `project` → `project_name` |
+| `Property Type` | `property_type` → `category_type` |
+| `Area` | `address` → `locality` → `city` → `area` |
+| `Budget` | `budget` → `max_price` → `min_price` |
+| `Configuration` | `property` → `configuration` → `bhk` → `property_field` |
+| `Remarks` / `Last Remarks` | `notes` → `message` → `remarks` → `comment` → `about` (decorated as `"Lead from 99acres - <notes>"` if present, else `"Lead from 99acres - Project: <enquiryFor>, Locality: <area>"`) |
+| `Created Date` | `lead_date` → `created_at` → `timestamp` (epoch s/ms, or ISO) — falls back to "now" if absent (the partner's current payload has no date field) |
 
 Hardcoded on insert: `Enquiry Progress='New'`, `Enquiry Source='99acres'`, `NFD=null`, `Assigned To='Unassigned'`, `Assigned By='System'`. The full raw JSON is also stored in `enquiries."99acres_raw_payload"` for debugging.
+
+> **Confirmed keys (per Sandeep, 99acres Integration Team, 2026-07-21):**
+> `name`, `phone`, `email`, `property` (`$bedroomNumBHK`), `budget` (`$price`),
+> `about`, `address` (`"$localityName, $cityName"`), `notes` (`$compactLabel`).
+> No authentication header is required.
 
 ## Webhook contract
 
 ```
-POST /api/integrations/99acres/webhook
+POST https://<your-deployment>/api/integrations/99acres/webhook
 Content-Type: application/json
-Authorization: Bearer <NINETY_NINE_ACRES_BEARER_TOKEN>   # optional, only if env var is set
 ```
 
-Body — sample:
+Body — sample (matches what 99acres sends today):
 
 ```json
 {
-  "lead_name": "Rahul Sharma",
+  "name": "Rahul Sharma",
   "phone": "9876543210",
   "email": "rahul@example.com",
-  "project": "Sky Heights",
-  "locality": "Ahmedabad",
-  "city": "Ahmedabad",
+  "property": "3 BHK",
   "budget": "8500000",
-  "configuration": "3 BHK",
-  "message": "Interested in site visit",
-  "lead_date": "2026-07-04T12:30:00Z"
+  "about": "",
+  "address": "Andheri West, Mumbai",
+  "notes": "Sky Heights"
 }
 ```
+
+> `Authorization: Bearer <token>` is **only** consulted when
+> `NINETY_NINE_ACRES_BEARER_TOKEN` is set in the environment. As of 2026-07-21
+> the partner confirmed no authentication is required, so the env var should
+> remain unset and the header may be omitted.
 
 Responses:
 

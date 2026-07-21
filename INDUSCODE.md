@@ -92,18 +92,18 @@ Receives leads POSTed by 99acres into the CRM. Receives JSON, validates Bearer i
 
 ### Field mapping (permissive aliases)
 
-| Target column | Accepted JSON keys |
+| Target column | Accepted JSON keys (tried in order) |
 |---|---|
-| `Client Name` | `lead_name`, `name`, `customer_name` |
+| `Client Name` | `name`, `lead_name`, `customer_name` |
 | `Mobile` | `phone`, `mobile`, `mobile_number`, `lead_phone` |
 | `Email` | `email`, `lead_email` |
-| `Enquiry For` | `project`, `project_name` |
-| `Area` | `locality`, `city`, `area` |
+| `Enquiry For` | `property`, `notes`, `project`, `project_name` |
+| `Area` | `address` (`"$localityName, $cityName"`), `locality`, `city`, `area` |
 | `Budget` | `budget`, `max_price`, `min_price` |
-| `Configuration` | `configuration`, `bhk`, `property_field` |
-| `Remarks` | `message`, `remarks`, `comment` |
+| `Configuration` | `property`, `configuration`, `bhk`, `property_field` |
+| `Remarks` | `notes`, `message`, `remarks`, `comment`, `about` |
 
-Lead date accepts `lead_date`/`created_at`/`timestamp` (epoch s, ms, or ISO). Hardcoded on insert: `Enquiry Progress='New'`, `Enquiry Source='99acres'`, `Assigned To='Unassigned'`, `Assigned By='System'`, `NFD=null`. Raw payload mirrored into `enquiries."99acres_raw_payload"`.
+Partner-confirmed payload (per 99acres Integration Team, 2026-07-21): `{ name, phone, email, property ($bedroomNumBHK), budget ($price), about, address, notes ($compactLabel) }`. No `Authorization` header is required (Sandeep confirmed), so `NINETY_NINE_ACRES_BEARER_TOKEN` should remain unset. Created Date falls back to "now" if no `lead_date`/`created_at`/`timestamp` is present. Hardcoded on insert: `Enquiry Progress='New'`, `Enquiry Source='99acres'`, `Assigned To='Unassigned'`, `Assigned By='System'`, `NFD=null`. Raw payload mirrored into `enquiries."99acres_raw_payload"`. Full partner doc: `INTEGRATIONS_99ACRES.md`.
 
 ### Env vars
 

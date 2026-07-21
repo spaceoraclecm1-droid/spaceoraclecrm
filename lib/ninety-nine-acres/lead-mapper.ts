@@ -11,12 +11,22 @@ export const FIELD_ALIASES = {
   clientName: ['lead_name', 'name', 'customer_name'],
   mobile: ['phone', 'mobile', 'mobile_number', 'lead_phone'],
   email: ['email', 'lead_email'],
-  enquiryFor: ['project', 'project_name'],
-  area: ['locality', 'city', 'area'],
+  // 99acres sends `property` (often BHK count, sometimes project) and `notes`
+  // ($compactLabel — also project-like). Try property first, then notes,
+  // then the older Housing-style project/project_name keys.
+  enquiryFor: ['property', 'notes', 'project', 'project_name'],
+  // 99acres sends a single `address` field formatted as
+  // "$localityName, $cityName". Fall back to bare locality/city/area if
+  // the partner ever sends those directly.
+  area: ['address', 'locality', 'city', 'area'],
   propertyType: ['property_type', 'category_type'],
   budget: ['budget', 'max_price', 'min_price'],
-  configuration: ['configuration', 'bhk', 'property_field'],
-  message: ['message', 'remarks', 'comment'],
+  // `property` from 99acres is usually $bedroomNumBHK (e.g. "3 BHK"), so
+  // it's a natural fit for `configuration` too.
+  configuration: ['property', 'configuration', 'bhk', 'property_field'],
+  // 99acres sends `notes` ($compactLabel) and an always-empty `about`. Keep
+  // them in remarks so the project/label isn't dropped.
+  message: ['notes', 'message', 'remarks', 'comment', 'about'],
   leadDate: ['lead_date', 'created_at', 'timestamp'],
 } as const;
 
