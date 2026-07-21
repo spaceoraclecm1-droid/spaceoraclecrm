@@ -49,6 +49,22 @@ interface TestSendResult {
   elapsedMs: number;
 }
 
+interface EnquiryLead {
+  id: string | number;
+  'Client Name'?: string | null;
+  Mobile?: string | null;
+  Email?: string | null;
+  'Enquiry For'?: string | null;
+  'Property Type'?: string | null;
+  Area?: string | null;
+  Budget?: string | null;
+  Configuration?: string | null;
+  Remarks?: string | null;
+  'Enquiry Progress'?: string | null;
+  'Created Date'?: string | null;
+  'Assigned To'?: string | null;
+}
+
 function copyText(text: string, onCopied: () => void) {
   if (typeof navigator === 'undefined' || !navigator.clipboard) {
     onCopied();
@@ -165,8 +181,30 @@ export default function Integration99AcresClient({ config }: Props) {
   const [logDetailLoading, setLogDetailLoading] = useState(false);
   const [reachable, setReachable] = useState<'ok' | 'bad' | 'pending'>('pending');
 
+  const [latestLead, setLatestLead] = useState<EnquiryLead | null>(null);
+  const [latestLeadLoading, setLatestLeadLoading] = useState(false);
+  const [latestLeadError, setLatestLeadError] = useState<string | null>(null);
+
   const logsRef = useRef<LogRow[]>([]);
   logsRef.current = logs;
+
+  const refreshLatestLead = useCallback(async () => {
+    setLatestLeadLoading(true);
+    try {
+      const resp = await fetch('/api/integrations/99acres/latest-lead', { cache: 'no-store' });
+      const json = await resp.json();
+      if (!resp.ok || !json.success) {
+        setLatestLeadError(json.message ?? 'Failed to load latest lead');
+      } else {
+        setLatestLead((json.data as EnquiryLead | null) ?? null);
+        if (latestLeadError) setLatestLeadError(null);
+      }
+    } catch (err) {
+      setLatestLeadError(String(err));
+    } finally {
+      setLatestLeadLoading(false);
+    }
+  }, [latestLeadError]);
 
   const refreshLogs = useCallback(async () => {
     setLogsLoading(true);
@@ -198,9 +236,13 @@ export default function Integration99AcresClient({ config }: Props) {
 
   useEffect(() => {
     refreshLogs();
-    const handle = setInterval(refreshLogs, 15_000);
+    refreshLatestLead();
+    const handle = setInterval(() => {
+      refreshLogs();
+      refreshLatestLead();
+    }, 15_000);
     return () => clearInterval(handle);
-  }, [refreshLogs]);
+  }, [refreshLogs, refreshLatestLead]);
 
   const successCount = useMemo(
     () => logs.filter((r) => r.status_code >= 200 && r.status_code < 300).length,
@@ -460,6 +502,60 @@ export default function Integration99AcresClient({ config }: Props) {
 
         <section className="bg-white rounded-2xl shadow border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Latest 99acres Lead</h2>
+            <button
+              onClick={refreshLatestLead}
+              disabled={latestLeadLoading}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {latestLeadLoading ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+
+          {latestLeadError && (
+            <div className="mb-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 px-3 py-2 text-sm">
+              {latestLeadError}
+            </div>
+          )}
+
+          {!latestLead && !latestLeadLoading && !latestLeadError && (
+            <div className="text-sm text-slate-500 py-6 text-center">
+              No 99acres leads received yet. Trigger one with{' '}
+              <strong>Send Test Lead</strong> above and it will appear here within 15 seconds.
+            </div>
+          )}
+
+          {latestLead && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <LeadField label="Lead ID" value={String(latestLead.id)} mono />
+              <LeadField label="Client Name" value={latestLead['Client Name']} />
+              <LeadField label="Mobile" value={latestLead.Mobile} mono />
+              <LeadField label="Email" value={latestLead.Email} />
+              <LeadField label="Enquiry For" value={latestLead['Enquiry For']} />
+              <LeadField label="Property Type" value={latestLead['Property Type']} />
+              <LeadField label="Configuration" value={latestLead.Configuration} />
+              <LeadField label="Area" value={latestLead.Area} wide />
+              <LeadField label="Budget" value={latestLead.Budget} mono />
+              <LeadField label="Assigned To" value={latestLead['Assigned To']} />
+              <LeadField label="Enquiry Progress" value={latestLead['Enquiry Progress']} />
+              <LeadField label="Created Date" value={latestLead['Created Date']} />
+              <LeadField label="Remarks" value={latestLead.Remarks} wide block />
+              <div className="md:col-span-3 flex items-center justify-between border-t border-slate-200 pt-4">
+                <Link
+                  href={`/enquiry/${latestLead.id}`}
+                  className="text-sm text-emerald-700 hover:underline"
+                  data-testid="view-lead"
+                >
+                  View in CRM →
+                </Link>
+                <span className="text-xs text-slate-400">Auto-refreshes every 15s</span>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="bg-white rounded-2xl shadow border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Integration Logs</h2>
             <button
               onClick={refreshLogs}
@@ -544,6 +640,33 @@ function Field(props: { label: string; hint?: string; children: React.ReactNode 
       {props.hint && <span className="block text-xs text-slate-500 mb-1">{props.hint}</span>}
       {props.children}
     </label>
+  );
+}
+
+function LeadField(props: {
+  label: string;
+  value: string | null | undefined;
+  mono?: boolean;
+  wide?: boolean;
+  block?: boolean;
+}) {
+  const empty = props.value == null || props.value === '';
+  return (
+    <div className={props.wide ? 'md:col-span-3' : ''}>
+      <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+        {props.label}
+      </div>
+      <div
+        className={
+          (props.mono ? 'font-mono ' : '') +
+          'bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm ' +
+          (empty ? 'text-slate-400 italic' : 'text-slate-800') +
+          (props.block ? ' whitespace-pre-wrap break-words' : '')
+        }
+      >
+        {empty ? '—' : String(props.value)}
+      </div>
+    </div>
   );
 }
 
