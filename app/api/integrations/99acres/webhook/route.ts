@@ -242,9 +242,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   });
 }
 
-export async function GET(): Promise<NextResponse> {
-  return NextResponse.json(
-    { success: false, message: 'Method not allowed. Use POST.' },
-    { status: 405, headers: { allow: 'POST' } }
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  return NextResponse.redirect(
+    new URL('/settings/integrations/99acres', request.url),
+    301
   );
 }
